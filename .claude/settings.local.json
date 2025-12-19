@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(timeout:*)",
+      "Bash(psql:*)",
+      "Bash(sudo systemctl status:*)",
+      "Bash(systemctl is-active:*)",
+      "Bash(alembic init:*)",
+      "Bash(pytest:*)",
+      "Bash(apt list:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
