@@ -72,7 +72,7 @@ alembic downgrade -1
 ```
 DEBUG=false
 DATABASE_URL=postgresql://user:pass@localhost:5432/backend_api
-CORS_ORIGINS=["http://localhost:3000","https://blog.funq.kr"]
+CORS_ORIGINS=["http://localhost:3000","http://localhost:3001","https://blog.funq.kr","https://chat.funq.kr"]
 ```
 
 ## Deployment
