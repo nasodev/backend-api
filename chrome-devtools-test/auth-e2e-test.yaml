@@ -1,0 +1,80 @@
+test_suite: Firebase Auth E2E
+description: Firebase 인증 → Backend API 연동 테스트
+
+preconditions:
+  servers:
+    - name: kid-chat
+      url: http://localhost:3001
+      command: cd /Users/hklee03-macbook/dev/kid-chat && npm run dev
+    - name: backend-api
+      url: http://localhost:8001
+      command: uvicorn app.main:app --port 8001
+
+test_cases:
+  - name: Login and Get Token
+    steps:
+      - action: navigate
+        url: http://localhost:3001
+      - action: fill
+        selector: input[placeholder="이름"]
+        value: e2e-test
+      - action: fill
+        selector: input[placeholder="비밀번호"]
+        value: e2e-test
+      - action: click
+        selector: button:text("로그인")
+      - action: wait_for
+        text: 접속 중
+      - action: evaluate
+        script: getToken()
+      - action: get_console_log
+        filter: "Token:"
+        save_as: firebase_token
+
+  - name: Test /auth/me with valid token
+    steps:
+      - action: api_request
+        method: GET
+        url: http://localhost:8001/auth/me
+        headers:
+          Authorization: Bearer ${firebase_token}
+    assertions:
+      - status_code: 200
+      - json_path: $.uid
+        exists: true
+      - json_path: $.email
+        equals: e2e-test@kidchat.local
+
+  - name: Test /auth/verify with valid token
+    steps:
+      - action: api_request
+        method: GET
+        url: http://localhost:8001/auth/verify
+        headers:
+          Authorization: Bearer ${firebase_token}
+    assertions:
+      - status_code: 200
+      - json_path: $.valid
+        equals: true
+
+  - name: Test /auth/me without token (should fail)
+    steps:
+      - action: api_request
+        method: GET
+        url: http://localhost:8001/auth/me
+    assertions:
+      - status_code: 403
+      - json_path: $.detail
+        equals: Not authenticated
+
+  - name: Test /auth/me with invalid token (should fail)
+    steps:
+      - action: api_request
+        method: GET
+        url: http://localhost:8001/auth/me
+        headers:
+          Authorization: Bearer invalid_token_here
+    assertions:
+      - status_code: 401
+      - json_path: $.detail
+        equals: Invalid authentication token
