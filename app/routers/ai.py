@@ -21,11 +21,12 @@ async def chat(
 
     Firebase 인증 필수.
 
-    시스템 지시사항 자동 추가:
-    - 간결하게 친구처럼 대답
-    - 파일 수정 금지
-    - 100단어 이내
-    - 최신정보 필요시 웹검색
+    ## AI 캐릭터 호출 방법
+    - "말랑아 ..." → 말랑이 (다정한 친구)
+    - "루팡아 ..." → 루팡 (건방진 친구)
+    - "푸딩아 ..." → 푸딩 (애완동물 느낌)
+    - "마이콜아 ..." → 마이콜 (영어 선생님)
+    - "에이아이야 ..." → 말랑이 (기존 호환)
     """
     logger.info(f"Chat request from user {user.uid}, prompt length: {len(request.prompt)}")
 
@@ -35,7 +36,17 @@ async def chat(
     )
 
     if not result.success:
-        if "timed out" in (result.error or "").lower():
+        if "no ai trigger" in (result.error or "").lower():
+            # AI 호출어가 없는 경우 - 일반 메시지이므로 무시
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "No AI trigger detected",
+                    "error_type": "no_trigger",
+                    "detail": "메시지에 AI 호출어가 없습니다. (말랑아/루팡아/푸딩아/마이콜아)",
+                },
+            )
+        elif "timed out" in (result.error or "").lower():
             raise HTTPException(
                 status_code=status.HTTP_408_REQUEST_TIMEOUT,
                 detail={
@@ -67,4 +78,5 @@ async def chat(
         response=result.output,
         elapsed_time_ms=result.elapsed_ms,
         truncated=False,
+        persona=result.persona_name,
     )

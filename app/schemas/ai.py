@@ -25,5 +25,9 @@ class ChatResponse(BaseModel):
     response: str = Field(..., description="Claude 응답")
     elapsed_time_ms: int = Field(..., description="응답 시간 (밀리초)")
     truncated: bool = Field(default=False, description="응답 잘림 여부")
+    persona: Optional[str] = Field(
+        default=None,
+        description="응답한 AI 캐릭터 (말랑이/루팡/푸딩/마이콜)",
+    )
 
     model_config = ConfigDict(from_attributes=True)
