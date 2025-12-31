@@ -3,7 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user, FirebaseUser
 from app.schemas.ai import ChatRequest, ChatResponse
-from app.services.claude_service import get_claude_service, ClaudeService
+from app.services.claude.dependencies import get_claude_service
+from app.services.claude.protocol import AIServiceProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/ai", tags=["ai"])
 async def chat(
     request: ChatRequest,
     user: FirebaseUser = Depends(get_current_user),
-    claude_service: ClaudeService = Depends(get_claude_service),
+    claude_service: AIServiceProtocol = Depends(get_claude_service),
 ):
     """
     Claude에게 프롬프트를 보내고 응답을 받습니다.

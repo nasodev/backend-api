@@ -25,7 +25,7 @@ echo "=== 3. .env 파일 생성 ==="
 cat > /home/funq/dev/backend-api/.env <<EOF
 DEBUG=false
 DATABASE_URL=postgresql://backend_api:your_secure_password_here@localhost:5432/backend_api
-CORS_ORIGINS=["http://localhost:3000","https://blog.funq.kr","https://api.funq.kr"]
+CORS_ORIGINS=["https://blog.funq.kr","https://api.funq.kr"]
 EOF
 
 echo "=== 4. Nginx 설정 ==="

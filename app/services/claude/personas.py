@@ -98,7 +98,7 @@ TRIGGER_MAP: dict[str, PersonaType] = {
 LEGACY_TRIGGERS = ["에이아이", "ai"]
 
 
-def detect_persona(message: str) -> tuple[PersonaType, str]:
+def detect_persona(message: str) -> tuple[PersonaType | None, str]:
     """
     메시지에서 페르소나를 감지하고 실제 프롬프트를 추출
 

@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "postgresql://postgres:postgres@localhost:5432/backend_api"
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004", "https://blog.funq.kr", "https://chat.funq.kr"]
+    # CORS (localhost는 main.py에서 regex로 모든 포트 허용)
+    cors_origins: list[str] = ["https://blog.funq.kr", "https://chat.funq.kr"]
 
     # Firebase
     firebase_credentials_path: str = "firebase/kid-chat-2ca0f-firebase-adminsdk-fbsvc-094c9dc406.json"
@@ -21,7 +21,12 @@ class Settings(BaseSettings):
     claude_timeout_seconds: int = 120
     claude_max_timeout_seconds: int = 300
 
-    model_config = SettingsConfigDict(env_file=".env")
+    # Firebase Test (E2E 테스트용)
+    test_firebase_id: str | None = None
+    test_firebase_password: str | None = None
+    test_firebase_api_key: str | None = None
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 @lru_cache

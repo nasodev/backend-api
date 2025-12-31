@@ -1,28 +1,21 @@
+"""인증 의존성 구현"""
+
+from typing import Callable
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from firebase_admin import auth as firebase_auth
 
-from app.firebase import verify_id_token
+from app.dependencies.entities import FirebaseUser
+from app.dependencies.token_verifier import get_token_verifier, TokenVerifier
 
 # Bearer 토큰 스키마
 security = HTTPBearer()
 
 
-class FirebaseUser:
-    """Firebase 인증 사용자 정보"""
-
-    def __init__(self, uid: str, email: str | None, name: str | None, token_data: dict):
-        self.uid = uid
-        self.email = email
-        self.name = name
-        self.token_data = token_data
-
-    def __repr__(self):
-        return f"FirebaseUser(uid={self.uid}, email={self.email}, name={self.name})"
-
-
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    verify_token: TokenVerifier = Depends(get_token_verifier),
 ) -> FirebaseUser:
     """
     Firebase ID Token을 검증하고 사용자 정보 반환
@@ -35,7 +28,7 @@ async def get_current_user(
     token = credentials.credentials
 
     try:
-        decoded_token = verify_id_token(token)
+        decoded_token = verify_token(token)
 
         return FirebaseUser(
             uid=decoded_token["uid"],

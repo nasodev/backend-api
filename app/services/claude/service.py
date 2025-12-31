@@ -1,12 +1,12 @@
-"""Claude Code CLI 서비스"""
+"""Claude Code CLI 서비스 구현"""
 
 import asyncio
 import time
 import logging
-from dataclasses import dataclass
 
 from app.config import get_settings
-from app.services.personas import (
+from app.services.claude.protocol import ChatResponse
+from app.services.claude.personas import (
     PersonaType,
     detect_persona,
     get_system_prompt,
@@ -16,19 +16,8 @@ from app.services.personas import (
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ClaudeResponse:
-    """Claude CLI 응답 데이터"""
-
-    output: str
-    elapsed_ms: int
-    success: bool
-    error: str | None = None
-    persona_name: str | None = None  # 응답한 캐릭터 이름
-
-
 class ClaudeService:
-    """Claude Code CLI 서비스"""
+    """Claude Code CLI 서비스 (AIServiceProtocol 구현)"""
 
     def __init__(self):
         self.settings = get_settings()
@@ -42,7 +31,7 @@ class ClaudeService:
         self,
         prompt: str,
         timeout_seconds: int | None = None,
-    ) -> ClaudeResponse:
+    ) -> ChatResponse:
         """
         Claude CLI로 채팅 요청
 
@@ -58,7 +47,7 @@ class ClaudeService:
             timeout_seconds: 타임아웃 (초)
 
         Returns:
-            ClaudeResponse: 응답 또는 에러
+            ChatResponse: 응답 또는 에러
         """
         settings = self.settings
         timeout = min(
@@ -71,7 +60,7 @@ class ClaudeService:
 
         if persona_type is None:
             # 호출어가 없으면 AI 응답 안함
-            return ClaudeResponse(
+            return ChatResponse(
                 output="",
                 elapsed_ms=0,
                 success=False,
@@ -111,7 +100,7 @@ class ClaudeService:
                 await process.wait()
                 elapsed_ms = int((time.monotonic() - start_time) * 1000)
                 logger.warning(f"Claude CLI timeout after {elapsed_ms}ms")
-                return ClaudeResponse(
+                return ChatResponse(
                     output="",
                     elapsed_ms=elapsed_ms,
                     success=False,
@@ -124,7 +113,7 @@ class ClaudeService:
             if process.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace").strip()
                 logger.error(f"Claude CLI error: {error_msg}")
-                return ClaudeResponse(
+                return ChatResponse(
                     output="",
                     elapsed_ms=elapsed_ms,
                     success=False,
@@ -137,7 +126,7 @@ class ClaudeService:
                 f"Claude CLI success ({persona.display_name}) in {elapsed_ms}ms, output length: {len(output)}"
             )
 
-            return ClaudeResponse(
+            return ChatResponse(
                 output=output,
                 elapsed_ms=elapsed_ms,
                 success=True,
@@ -148,7 +137,7 @@ class ClaudeService:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
             error = f"Claude CLI not found at: {settings.claude_cli_path}"
             logger.error(error)
-            return ClaudeResponse(
+            return ChatResponse(
                 output="",
                 elapsed_ms=elapsed_ms,
                 success=False,
@@ -157,20 +146,9 @@ class ClaudeService:
         except Exception as e:
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
             logger.exception("Unexpected error in Claude CLI execution")
-            return ClaudeResponse(
+            return ChatResponse(
                 output="",
                 elapsed_ms=elapsed_ms,
                 success=False,
                 error=str(e),
             )
-
-
-_claude_service: ClaudeService | None = None
-
-
-def get_claude_service() -> ClaudeService:
-    """Claude 서비스 싱글톤 반환"""
-    global _claude_service
-    if _claude_service is None:
-        _claude_service = ClaudeService()
-    return _claude_service
