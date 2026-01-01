@@ -39,7 +39,8 @@
       "Bash(git push)",
       "Bash(git push:*)",
       "Bash(git branch:*)",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(ls:*)"
     ]
   }
 }
