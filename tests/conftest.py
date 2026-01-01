@@ -5,10 +5,21 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.services.claude.dependencies import get_claude_service
+from app.services.calendar.dependencies import (
+    get_member_service,
+    get_category_service,
+    get_event_service,
+)
 from app.dependencies.auth import get_current_user
 from app.dependencies.token_verifier import get_token_verifier
 from app.dependencies.entities import FirebaseUser
-from tests.fakes import FakeAuthService, FakeClaudeService
+from tests.fakes import (
+    FakeAuthService,
+    FakeClaudeService,
+    FakeMemberService,
+    FakeCategoryService,
+    FakeEventService,
+)
 
 
 @pytest.fixture
@@ -88,6 +99,70 @@ def client_with_fake_token_verifier(fake_auth):
             assert response.status_code == 200
     """
     app.dependency_overrides[get_token_verifier] = lambda: fake_auth.verify_token
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+# Calendar Service Fixtures
+
+@pytest.fixture
+def fake_member_service():
+    """Fake Member 서비스"""
+    return FakeMemberService()
+
+
+@pytest.fixture
+def fake_category_service():
+    """Fake Category 서비스"""
+    return FakeCategoryService()
+
+
+@pytest.fixture
+def fake_event_service():
+    """Fake Event 서비스"""
+    return FakeEventService()
+
+
+@pytest.fixture
+def client_with_fake_member_service(fake_member_service, fake_user):
+    """Member 서비스가 Fake로 대체된 테스트 클라이언트"""
+    app.dependency_overrides[get_member_service] = lambda: fake_member_service
+    app.dependency_overrides[get_current_user] = lambda: fake_user
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_with_fake_category_service(fake_category_service, fake_user):
+    """Category 서비스가 Fake로 대체된 테스트 클라이언트"""
+    app.dependency_overrides[get_category_service] = lambda: fake_category_service
+    app.dependency_overrides[get_current_user] = lambda: fake_user
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_with_fake_event_service(fake_event_service, fake_user):
+    """Event 서비스가 Fake로 대체된 테스트 클라이언트"""
+    app.dependency_overrides[get_event_service] = lambda: fake_event_service
+    app.dependency_overrides[get_current_user] = lambda: fake_user
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_with_fake_calendar_services(
+    fake_member_service, fake_category_service, fake_event_service, fake_user
+):
+    """모든 Calendar 서비스가 Fake로 대체된 테스트 클라이언트"""
+    app.dependency_overrides[get_member_service] = lambda: fake_member_service
+    app.dependency_overrides[get_category_service] = lambda: fake_category_service
+    app.dependency_overrides[get_event_service] = lambda: fake_event_service
+    app.dependency_overrides[get_current_user] = lambda: fake_user
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()

@@ -1,3 +1,4 @@
-from app.routers import health, auth, ai, members, categories, events
+from app.routers import health, auth, ai
+from app.routers.calendar import router as calendar_router
 
-__all__ = ["health", "auth", "ai", "members", "categories", "events"]
+__all__ = ["health", "auth", "ai", "calendar_router"]
