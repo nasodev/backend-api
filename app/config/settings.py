@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://postgres:postgres@localhost:5432/backend_api"
 
     # CORS (localhost는 main.py에서 regex로 모든 포트 허용)
-    cors_origins: list[str] = ["https://blog.funq.kr", "https://chat.funq.kr"]
+    cors_origins: list[str] = ["https://blog.funq.kr", "https://chat.funq.kr", "https://calendar.funq.kr"]
 
     # Firebase
     firebase_credentials_path: str = "firebase/kid-chat-2ca0f-firebase-adminsdk-fbsvc-094c9dc406.json"
