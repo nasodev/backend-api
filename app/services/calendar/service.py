@@ -132,20 +132,25 @@ class MemberService:
 
     def verify_and_link(
         self, email: str, firebase_uid: str
-    ) -> FamilyMemberResponse | None:
-        """이메일로 구성원 찾고 Firebase UID 연결"""
+    ) -> FamilyMemberResponse:
+        """Firebase UID로 구성원 찾거나 자동 생성"""
+        # 1. Firebase UID로 기존 구성원 검색
         member = (
             self.db.query(FamilyMember)
-            .filter(FamilyMember.email == email)
+            .filter(FamilyMember.firebase_uid == firebase_uid)
             .first()
         )
-        if not member:
-            return None
 
-        # Firebase UID 연결 (첫 로그인 시)
-        if not member.firebase_uid:
-            member.firebase_uid = firebase_uid
-            member.is_registered = True
+        # 2. 없으면 자동 생성 (첫 로그인)
+        if not member:
+            display_name = email.split("@")[0]
+            member = FamilyMember(
+                email=email,
+                display_name=display_name,
+                firebase_uid=firebase_uid,
+                is_registered=True,
+            )
+            self.db.add(member)
             self.db.commit()
             self.db.refresh(member)
 

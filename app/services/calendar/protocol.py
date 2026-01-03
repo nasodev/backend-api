@@ -44,14 +44,13 @@ class MemberServiceProtocol(Protocol):
 
     def verify_and_link(
         self, email: str, firebase_uid: str
-    ) -> FamilyMemberResponse | None:
-        """이메일로 구성원 찾고 Firebase UID 연결
+    ) -> FamilyMemberResponse:
+        """Firebase UID로 구성원 찾거나 자동 생성
 
-        사전 등록된 구성원을 이메일로 찾아 Firebase UID를 연결합니다.
-        이미 연결된 경우 기존 정보를 반환합니다.
+        기존 구성원이면 반환, 없으면 자동 생성합니다.
 
         Returns:
-            FamilyMemberResponse if found, None otherwise
+            FamilyMemberResponse (항상 반환)
         """
         ...
 
