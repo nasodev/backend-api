@@ -148,6 +148,7 @@ class MemberService:
                 email=email,
                 display_name=display_name,
                 firebase_uid=firebase_uid,
+                color="#808080",  # 기본 색상 (회색)
                 is_registered=True,
             )
             self.db.add(member)
