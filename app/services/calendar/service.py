@@ -141,7 +141,21 @@ class MemberService:
             .first()
         )
 
-        # 2. 없으면 자동 생성 (첫 로그인)
+        # 2. Firebase UID 없으면 이메일로 검색 후 연결
+        if not member:
+            member = (
+                self.db.query(FamilyMember)
+                .filter(FamilyMember.email == email)
+                .first()
+            )
+            if member:
+                # 기존 멤버에 Firebase UID 연결
+                member.firebase_uid = firebase_uid
+                member.is_registered = True
+                self.db.commit()
+                self.db.refresh(member)
+
+        # 3. 둘 다 없으면 자동 생성 (첫 로그인)
         if not member:
             display_name = email.split("@")[0]
             member = FamilyMember(

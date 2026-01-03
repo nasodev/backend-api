@@ -112,12 +112,27 @@ class FakeMemberService:
         self, email: str, firebase_uid: str
     ) -> FamilyMemberResponse:
         """Firebase UID로 구성원 찾거나 자동 생성"""
-        # 1. 기존 구성원 검색
+        # 1. Firebase UID로 검색
         member_id = self._firebase_uid_map.get(firebase_uid)
         if member_id and member_id in self._members:
             return self._members[member_id]
 
-        # 2. 없으면 자동 생성
+        # 2. 이메일로 검색 후 연결
+        for mid, member in self._members.items():
+            if member.email == email:
+                self._firebase_uid_map[firebase_uid] = mid
+                updated = FamilyMemberResponse(
+                    id=member.id,
+                    email=member.email,
+                    display_name=member.display_name,
+                    color=member.color,
+                    is_registered=True,
+                    created_at=member.created_at,
+                )
+                self._members[mid] = updated
+                return updated
+
+        # 3. 없으면 자동 생성
         member_id = uuid4()
         display_name = email.split("@")[0]
         member = FamilyMemberResponse(
