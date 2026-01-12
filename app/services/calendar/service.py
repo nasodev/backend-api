@@ -1,11 +1,12 @@
 """캘린더 서비스 구현"""
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
-from app.models import FamilyMember, Category, Event
+from app.models import FamilyMember, Category, Event, RecurrenceException
 from app.schemas.calendar import (
     FamilyMemberCreate,
     FamilyMemberUpdate,
@@ -19,6 +20,7 @@ from app.schemas.calendar import (
     MemberInfo,
     CategoryInfo,
 )
+from app.services.calendar.recurrence import get_occurrences
 
 
 class NotFoundError(Exception):
@@ -279,22 +281,79 @@ class EventService:
     def get_by_date_range(
         self, start_date: date, end_date: date
     ) -> list[EventResponse]:
-        """기간 내 일정 조회"""
-        events = (
+        """기간 내 일정 조회 (반복 일정 확장 포함)"""
+        results: list[EventResponse] = []
+
+        # 1. 일반 일정 (반복 없음) - 기간 내 일정
+        non_recurring = (
             self.db.query(Event)
             .filter(
+                Event.recurrence_rule.is_(None),
                 Event.start_time >= datetime.combine(start_date, datetime.min.time()),
                 Event.start_time <= datetime.combine(end_date, datetime.max.time()),
             )
             .all()
         )
-        return [self._event_to_response(e) for e in events]
+        for event in non_recurring:
+            results.append(self._event_to_response(event))
+
+        # 2. 반복 일정 - 시작일이 조회 종료일 이전인 모든 반복 일정
+        recurring = (
+            self.db.query(Event)
+            .filter(
+                Event.recurrence_rule.isnot(None),
+                Event.start_time <= datetime.combine(end_date, datetime.max.time()),
+                or_(
+                    Event.recurrence_end.is_(None),
+                    Event.recurrence_end >= start_date,
+                ),
+            )
+            .all()
+        )
+
+        for event in recurring:
+            # 예외 처리된 날짜 조회
+            exceptions = (
+                self.db.query(RecurrenceException)
+                .filter(
+                    RecurrenceException.event_id == event.id,
+                    RecurrenceException.is_deleted == True,
+                )
+                .all()
+            )
+            excluded_dates = {ex.original_date for ex in exceptions}
+
+            # 반복 일정 확장
+            occurrences = get_occurrences(
+                rrule_str=event.recurrence_rule,
+                dtstart=event.start_time,
+                range_start=start_date,
+                range_end=event.recurrence_end or end_date,
+                excluded_dates=excluded_dates,
+            )
+
+            for occurrence_date in occurrences:
+                # occurrence_date가 조회 범위 내인지 확인
+                if start_date <= occurrence_date <= end_date:
+                    results.append(
+                        self._event_to_response(event, occurrence_date=occurrence_date)
+                    )
+
+        # 날짜순 정렬 (occurrence_date 또는 start_time 기준)
+        results.sort(
+            key=lambda e: e.occurrence_date or e.start_time.date()
+        )
+
+        return results
 
     def create(
         self, data: EventCreate, creator_firebase_uid: str
     ) -> EventResponse:
         """일정 생성"""
         member = self._get_member_by_firebase_uid(creator_firebase_uid)
+
+        # recurrence_pattern이 있으면 RRULE로 변환
+        rrule = data.get_rrule()
 
         event = Event(
             title=data.title,
@@ -304,8 +363,8 @@ class EventService:
             all_day=data.all_day,
             category_id=data.category_id,
             created_by=member.id,
-            recurrence_rule=data.recurrence_rule,
-            recurrence_start=data.recurrence_start,
+            recurrence_rule=rrule,
+            recurrence_start=data.start_time.date() if rrule else None,
             recurrence_end=data.recurrence_end,
         )
         self.db.add(event)
@@ -319,7 +378,12 @@ class EventService:
         if not event:
             raise NotFoundError("일정을 찾을 수 없습니다")
 
-        update_data = data.model_dump(exclude_unset=True)
+        # recurrence_pattern이 있으면 RRULE로 변환
+        rrule = data.get_rrule()
+        if rrule:
+            event.recurrence_rule = rrule
+
+        update_data = data.model_dump(exclude_unset=True, exclude={"recurrence_pattern", "recurrence_rule"})
         for field, value in update_data.items():
             setattr(event, field, value)
 
