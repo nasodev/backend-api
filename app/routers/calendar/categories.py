@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from app.dependencies import get_current_user, FirebaseUser
 from app.schemas import (
@@ -13,7 +13,6 @@ from app.schemas import (
 from app.services.calendar import (
     CategoryServiceProtocol,
     get_category_service,
-    NotFoundError,
 )
 
 router = APIRouter(prefix="/categories", tags=["calendar"])
@@ -46,13 +45,7 @@ def update_category(
     service: CategoryServiceProtocol = Depends(get_category_service),
 ):
     """카테고리 수정"""
-    try:
-        return service.update(category_id, data)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        )
+    return service.update(category_id, data)
 
 
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -62,10 +55,4 @@ def delete_category(
     service: CategoryServiceProtocol = Depends(get_category_service),
 ):
     """카테고리 삭제"""
-    try:
-        service.delete(category_id)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        )
+    service.delete(category_id)

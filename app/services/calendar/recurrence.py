@@ -4,12 +4,15 @@ RRULE 형식을 사용하여 반복 일정을 처리합니다.
 https://icalendar.org/iCalendar-RFC-5545/3-8-5-3-recurrence-rule.html
 """
 
+import logging
 from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Optional
 
 from dateutil.rrule import rrule, rrulestr, DAILY, WEEKLY, MONTHLY, YEARLY
 from dateutil.rrule import MO, TU, WE, TH, FR, SA, SU
+
+logger = logging.getLogger(__name__)
 
 
 class RecurrenceFrequency(str, Enum):
@@ -153,8 +156,9 @@ def get_occurrences(
 
         return occurrences
 
-    except Exception:
-        # 잘못된 RRULE인 경우 빈 목록 반환
+    except ValueError as e:
+        # 잘못된 RRULE 형식
+        logger.warning(f"Invalid RRULE format: {rrule_str}, error: {e}")
         return []
 
 
@@ -185,5 +189,6 @@ def get_next_occurrence(
             return next_dt.date()
         return None
 
-    except Exception:
+    except ValueError as e:
+        logger.warning(f"Invalid RRULE format: {rrule_str}, error: {e}")
         return None

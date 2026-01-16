@@ -8,8 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
-logger = logging.getLogger(__name__)
-
+from app.exceptions import NotFoundError, DuplicateError, ForbiddenError
 from app.models import FamilyMember, Category, Event, RecurrenceException
 from app.schemas.calendar import (
     FamilyMemberCreate,
@@ -26,29 +25,7 @@ from app.schemas.calendar import (
 )
 from app.services.calendar.recurrence import get_occurrences
 
-
-class NotFoundError(Exception):
-    """리소스를 찾을 수 없음"""
-
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
-
-
-class DuplicateError(Exception):
-    """중복된 리소스"""
-
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
-
-
-class ForbiddenError(Exception):
-    """권한 없음"""
-
-    def __init__(self, message: str):
-        self.message = message
-        super().__init__(message)
+logger = logging.getLogger(__name__)
 
 
 class MemberService:

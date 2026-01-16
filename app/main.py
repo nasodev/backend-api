@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import health, auth, ai
 from app.routers.calendar import router as calendar_router
+from app.exception_handlers import register_exception_handlers
 
 settings = get_settings()
 
@@ -12,6 +13,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Exception handlers
+register_exception_handlers(app)
 
 # CORS
 app.add_middleware(

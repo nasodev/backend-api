@@ -9,6 +9,8 @@ from app.services.calendar.service import (
     MemberService,
     CategoryService,
     EventService,
+)
+from app.exceptions import (
     NotFoundError,
     DuplicateError,
     ForbiddenError,

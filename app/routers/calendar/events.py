@@ -4,7 +4,7 @@ from datetime import date
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.dependencies import get_current_user, FirebaseUser
 from app.schemas.calendar import (
@@ -16,8 +16,6 @@ from app.schemas.calendar import (
 from app.services.calendar import (
     EventServiceProtocol,
     get_event_service,
-    NotFoundError,
-    ForbiddenError,
 )
 
 router = APIRouter(prefix="/events", tags=["calendar"])
@@ -42,13 +40,7 @@ def create_event(
     service: EventServiceProtocol = Depends(get_event_service),
 ):
     """일정 생성"""
-    try:
-        return service.create(data, user.uid)
-    except ForbiddenError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=e.message,
-        )
+    return service.create(data, user.uid)
 
 
 @router.patch("/{event_id}", response_model=EventResponse)
@@ -59,13 +51,7 @@ def update_event(
     service: EventServiceProtocol = Depends(get_event_service),
 ):
     """일정 수정"""
-    try:
-        return service.update(event_id, data)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        )
+    return service.update(event_id, data)
 
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -75,10 +61,4 @@ def delete_event(
     service: EventServiceProtocol = Depends(get_event_service),
 ):
     """일정 삭제"""
-    try:
-        service.delete(event_id)
-    except NotFoundError as e:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=e.message,
-        )
+    service.delete(event_id)
