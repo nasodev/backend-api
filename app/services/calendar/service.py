@@ -1,10 +1,14 @@
 """캘린더 서비스 구현"""
 
+import logging
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 from app.models import FamilyMember, Category, Event, RecurrenceException
 from app.schemas.calendar import (
@@ -135,7 +139,10 @@ class MemberService:
     def verify_and_link(
         self, email: str, firebase_uid: str
     ) -> FamilyMemberResponse:
-        """Firebase UID로 구성원 찾거나 자동 생성"""
+        """Firebase UID로 구성원 찾거나 자동 생성
+
+        레이스 컨디션 방지: IntegrityError 발생 시 재조회
+        """
         # 1. Firebase UID로 기존 구성원 검색
         member = (
             self.db.query(FamilyMember)
@@ -143,22 +150,39 @@ class MemberService:
             .first()
         )
 
+        if member:
+            return FamilyMemberResponse.model_validate(member)
+
         # 2. Firebase UID 없으면 이메일로 검색 후 연결
-        if not member:
-            member = (
-                self.db.query(FamilyMember)
-                .filter(FamilyMember.email == email)
-                .first()
-            )
-            if member:
-                # 기존 멤버에 Firebase UID 연결
+        member = (
+            self.db.query(FamilyMember)
+            .filter(FamilyMember.email == email)
+            .first()
+        )
+
+        if member:
+            # 기존 멤버에 Firebase UID 연결
+            try:
                 member.firebase_uid = firebase_uid
                 member.is_registered = True
                 self.db.commit()
                 self.db.refresh(member)
+                return FamilyMemberResponse.model_validate(member)
+            except IntegrityError:
+                # 동시 요청으로 이미 다른 요청에서 연결됨
+                self.db.rollback()
+                logger.warning(f"Race condition on linking firebase_uid: {firebase_uid}")
+                member = (
+                    self.db.query(FamilyMember)
+                    .filter(FamilyMember.firebase_uid == firebase_uid)
+                    .first()
+                )
+                if member:
+                    return FamilyMemberResponse.model_validate(member)
+                raise DuplicateError("Firebase UID already linked to another member")
 
         # 3. 둘 다 없으면 자동 생성 (첫 로그인)
-        if not member:
+        try:
             display_name = email.split("@")[0]
             member = FamilyMember(
                 email=email,
@@ -170,8 +194,27 @@ class MemberService:
             self.db.add(member)
             self.db.commit()
             self.db.refresh(member)
-
-        return FamilyMemberResponse.model_validate(member)
+            return FamilyMemberResponse.model_validate(member)
+        except IntegrityError:
+            # 동시 요청으로 이미 생성됨 - 재조회
+            self.db.rollback()
+            logger.warning(f"Race condition on creating member: {email}")
+            member = (
+                self.db.query(FamilyMember)
+                .filter(FamilyMember.firebase_uid == firebase_uid)
+                .first()
+            )
+            if member:
+                return FamilyMemberResponse.model_validate(member)
+            # email로 생성된 경우
+            member = (
+                self.db.query(FamilyMember)
+                .filter(FamilyMember.email == email)
+                .first()
+            )
+            if member:
+                return FamilyMemberResponse.model_validate(member)
+            raise DuplicateError("Member creation failed due to concurrent request")
 
 
 class CategoryService:

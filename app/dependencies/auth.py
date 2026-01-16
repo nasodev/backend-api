@@ -1,5 +1,6 @@
 """인증 의존성 구현"""
 
+import logging
 from typing import Callable
 
 from fastapi import Depends, HTTPException, status
@@ -8,6 +9,8 @@ from firebase_admin import auth as firebase_auth
 
 from app.dependencies.entities import FirebaseUser
 from app.dependencies.token_verifier import get_token_verifier, TokenVerifier
+
+logger = logging.getLogger(__name__)
 
 # Bearer 토큰 스키마
 security = HTTPBearer()
@@ -50,8 +53,11 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
+        # 내부 로깅 (디버깅용)
+        logger.error(f"Authentication error: {type(e).__name__}: {str(e)}")
+        # 클라이언트에는 일반적인 메시지만 반환 (정보 누출 방지)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Authentication failed: {str(e)}",
+            detail="Authentication failed",
             headers={"WWW-Authenticate": "Bearer"},
         )

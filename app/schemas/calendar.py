@@ -1,11 +1,21 @@
 """캘린더 API 스키마"""
 
+import re
 from datetime import datetime, date
 from enum import Enum
 from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
+
+
+# ============ Validators ============
+
+def validate_hex_color(v: str) -> str:
+    """#RRGGBB 형식의 유효한 hex 색상인지 검증"""
+    if not re.match(r'^#[0-9A-Fa-f]{6}$', v):
+        raise ValueError('Color must be a valid hex color in #RRGGBB format (e.g., #FF5733)')
+    return v.upper()  # 일관성을 위해 대문자로 정규화
 
 
 # ============ Recurrence ============
@@ -72,9 +82,7 @@ class FamilyMemberBase(BaseModel):
     @field_validator('color')
     @classmethod
     def validate_color(cls, v: str) -> str:
-        if not v.startswith('#') or len(v) != 7:
-            raise ValueError('Color must be in #RRGGBB format')
-        return v
+        return validate_hex_color(v)
 
 
 class FamilyMemberCreate(FamilyMemberBase):
@@ -84,6 +92,13 @@ class FamilyMemberCreate(FamilyMemberBase):
 class FamilyMemberUpdate(BaseModel):
     display_name: Optional[str] = None
     color: Optional[str] = None
+
+    @field_validator('color')
+    @classmethod
+    def validate_color(cls, v: str | None) -> str | None:
+        if v is not None:
+            return validate_hex_color(v)
+        return v
 
 
 class FamilyMemberResponse(FamilyMemberBase):
@@ -102,6 +117,11 @@ class CategoryBase(BaseModel):
     color: str
     icon: Optional[str] = None
 
+    @field_validator('color')
+    @classmethod
+    def validate_color(cls, v: str) -> str:
+        return validate_hex_color(v)
+
 
 class CategoryCreate(CategoryBase):
     pass
@@ -111,6 +131,13 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
+
+    @field_validator('color')
+    @classmethod
+    def validate_color(cls, v: str | None) -> str | None:
+        if v is not None:
+            return validate_hex_color(v)
+        return v
 
 
 class CategoryResponse(CategoryBase):
