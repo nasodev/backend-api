@@ -41,7 +41,7 @@ jobs:
             source venv/bin/activate
             pip install -r requirements.txt
 
-            # Run migrations if any
-            # alembic upgrade head
+            # Run migrations
+            alembic upgrade head
 
             sudo systemctl restart backend-api

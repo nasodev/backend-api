@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, date
 from typing import Optional
 
-from sqlalchemy import String, Boolean, Text, ForeignKey, DateTime, Date
+from sqlalchemy import String, Boolean, Text, ForeignKey, DateTime, Date, Index
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -51,6 +51,11 @@ class Category(Base):
 class Event(Base):
     """일정"""
     __tablename__ = "events"
+    __table_args__ = (
+        # 날짜 범위 쿼리 최적화를 위한 인덱스
+        Index("ix_events_start_time", "start_time"),
+        Index("ix_events_recurrence_end", "recurrence_end"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -99,6 +104,10 @@ class Event(Base):
 class RecurrenceException(Base):
     """반복 일정 예외"""
     __tablename__ = "recurrence_exceptions"
+    __table_args__ = (
+        # event_id로 조회 최적화 (PostgreSQL은 FK에 자동 인덱스 안 만듦)
+        Index("ix_recurrence_exceptions_event_id", "event_id"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4

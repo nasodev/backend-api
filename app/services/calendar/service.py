@@ -4,7 +4,7 @@ import logging
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
@@ -328,8 +328,13 @@ class EventService:
         results: list[EventResponse] = []
 
         # 1. 일반 일정 (반복 없음) - 기간 내 일정
+        # joinedload로 creator, category를 함께 로드하여 N+1 쿼리 방지
         non_recurring = (
             self.db.query(Event)
+            .options(
+                joinedload(Event.creator),
+                joinedload(Event.category),
+            )
             .filter(
                 Event.recurrence_rule.is_(None),
                 Event.start_time >= datetime.combine(start_date, datetime.min.time()),
@@ -341,8 +346,14 @@ class EventService:
             results.append(self._event_to_response(event))
 
         # 2. 반복 일정 - 시작일이 조회 종료일 이전인 모든 반복 일정
+        # joinedload로 creator, category, exceptions를 함께 로드하여 N+1 쿼리 방지
         recurring = (
             self.db.query(Event)
+            .options(
+                joinedload(Event.creator),
+                joinedload(Event.category),
+                joinedload(Event.exceptions),
+            )
             .filter(
                 Event.recurrence_rule.isnot(None),
                 Event.start_time <= datetime.combine(end_date, datetime.max.time()),
@@ -355,16 +366,10 @@ class EventService:
         )
 
         for event in recurring:
-            # 예외 처리된 날짜 조회
-            exceptions = (
-                self.db.query(RecurrenceException)
-                .filter(
-                    RecurrenceException.event_id == event.id,
-                    RecurrenceException.is_deleted == True,
-                )
-                .all()
-            )
-            excluded_dates = {ex.original_date for ex in exceptions}
+            # 이미 joinedload로 로드된 exceptions 사용 (N+1 쿼리 제거)
+            excluded_dates = {
+                ex.original_date for ex in event.exceptions if ex.is_deleted
+            }
 
             # 반복 일정 확장
             occurrences = get_occurrences(
