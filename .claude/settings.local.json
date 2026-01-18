@@ -44,7 +44,13 @@
       "Bash(mkdir:*)",
       "Bash(git commit:*)",
       "Bash(docker exec:*)",
-      "Bash(alembic upgrade:*)"
+      "Bash(alembic upgrade:*)",
+      "Bash(pip show:*)",
+      "Bash(chmod:*)",
+      "Bash(docker start:*)",
+      "Bash(git -C /Users/hklee03-macbook/dev/funq/backend-api ls-files:*)",
+      "Bash(alembic revision:*)",
+      "Bash(alembic current:*)"
     ]
   }
 }
