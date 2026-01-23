@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.routers.calendar import auth, members, categories, events, admin
+from app.routers.calendar import auth, members, categories, events, admin, ai
 
 router = APIRouter(prefix="/calendar", tags=["calendar"])
 
@@ -11,5 +11,6 @@ router.include_router(members.router)
 router.include_router(categories.router)
 router.include_router(events.router)
 router.include_router(admin.router)
+router.include_router(ai.router)
 
 __all__ = ["router"]

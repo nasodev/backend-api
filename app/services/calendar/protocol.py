@@ -99,3 +99,45 @@ class EventServiceProtocol(Protocol):
     def delete(self, event_id: UUID) -> None:
         """일정 삭제"""
         ...
+
+
+class PendingEventServiceProtocol(Protocol):
+    """PendingEvent 서비스 인터페이스 (TDD용 추상화)"""
+
+    def create(
+        self,
+        event_data: list[dict],
+        user_uid: str,
+        source_text: str | None = None,
+        source_image_hash: str | None = None,
+        ai_message: str | None = None,
+        confidence: float = 1.0,
+        expires_minutes: int | None = None,
+    ):
+        """PendingEvent 생성"""
+        ...
+
+    def get_by_id(self, pending_id: UUID):
+        """ID로 PendingEvent 조회"""
+        ...
+
+    def get_pending_by_user(self, user_uid: str) -> list:
+        """사용자의 대기 중인 PendingEvent 목록 조회"""
+        ...
+
+    def confirm(
+        self,
+        pending_id: UUID,
+        user_uid: str,
+        modifications: list[EventCreate] | None = None,
+    ) -> list:
+        """PendingEvent 확인 → Event 생성"""
+        ...
+
+    def cancel(self, pending_id: UUID, user_uid: str) -> None:
+        """PendingEvent 취소"""
+        ...
+
+    def cleanup_expired(self) -> int:
+        """만료된 PendingEvent 정리"""
+        ...

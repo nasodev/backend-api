@@ -100,4 +100,6 @@ class TestGetPersona:
         for persona_type in PersonaType:
             prompt = get_system_prompt(persona_type)
             assert len(prompt) > 0
-            assert "공통 규칙" in prompt
+            # 달력이는 JSON 전용이므로 공통 규칙이 없음
+            if persona_type != PersonaType.CALENDAR:
+                assert "공통 규칙" in prompt

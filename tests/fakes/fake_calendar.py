@@ -1,6 +1,8 @@
 """Fake 캘린더 서비스"""
 
-from datetime import date, datetime, timezone
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone
+from typing import Any
 from uuid import UUID, uuid4
 
 from app.schemas.calendar import (
@@ -322,3 +324,147 @@ class FakeEventService:
         if event_id not in self._events:
             raise NotFoundError("일정을 찾을 수 없습니다")
         del self._events[event_id]
+
+
+@dataclass
+class FakePendingEvent:
+    """Fake PendingEvent 모델"""
+
+    id: UUID
+    event_data: list[dict]
+    source_text: str | None
+    source_image_hash: str | None
+    created_by: UUID
+    status: str
+    confidence: float
+    ai_message: str | None
+    created_at: datetime
+    expires_at: datetime
+
+
+class FakePendingEventService:
+    """테스트용 Fake PendingEvent 서비스
+
+    Usage:
+        fake_service = FakePendingEventService()
+        app.dependency_overrides[get_pending_event_service] = lambda: fake_service
+    """
+
+    def __init__(self, event_service: FakeEventService | None = None):
+        self._pending: dict[UUID, FakePendingEvent] = {}
+        self._by_user: dict[str, list[UUID]] = {}
+        self._member_by_uid: dict[str, UUID] = {}
+        self._event_service = event_service
+
+    def set_member_mapping(self, firebase_uid: str, member_id: UUID):
+        """Firebase UID와 Member ID 매핑 설정"""
+        self._member_by_uid[firebase_uid] = member_id
+
+    def create(
+        self,
+        event_data: list[dict],
+        user_uid: str,
+        source_text: str | None = None,
+        source_image_hash: str | None = None,
+        ai_message: str | None = None,
+        confidence: float = 1.0,
+        expires_minutes: int | None = None,
+    ) -> FakePendingEvent:
+        pending_id = uuid4()
+        member_id = self._member_by_uid.get(user_uid, uuid4())
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(minutes=expires_minutes or 30)
+
+        pending = FakePendingEvent(
+            id=pending_id,
+            event_data=event_data,
+            source_text=source_text,
+            source_image_hash=source_image_hash,
+            created_by=member_id,
+            status="pending",
+            confidence=confidence,
+            ai_message=ai_message,
+            created_at=now,
+            expires_at=expires_at,
+        )
+        self._pending[pending_id] = pending
+
+        if user_uid not in self._by_user:
+            self._by_user[user_uid] = []
+        self._by_user[user_uid].append(pending_id)
+
+        return pending
+
+    def get_by_id(self, pending_id: UUID) -> FakePendingEvent | None:
+        return self._pending.get(pending_id)
+
+    def get_pending_by_user(self, user_uid: str) -> list[FakePendingEvent]:
+        pending_ids = self._by_user.get(user_uid, [])
+        return [
+            self._pending[pid]
+            for pid in pending_ids
+            if pid in self._pending and self._pending[pid].status == "pending"
+        ]
+
+    def confirm(
+        self,
+        pending_id: UUID,
+        user_uid: str,
+        modifications: list[EventCreate] | None = None,
+    ) -> list[Any]:
+        pending = self._pending.get(pending_id)
+        if not pending:
+            raise ValueError("PendingEvent not found")
+        if pending.status != "pending":
+            raise ValueError(f"Invalid status: {pending.status}")
+
+        pending.status = "confirmed"
+
+        # Create events
+        created_events = []
+        events_to_create = (
+            modifications
+            if modifications
+            else [
+                EventCreate(
+                    title=e.get("title", ""),
+                    start_time=e.get("start_time"),
+                    end_time=e.get("end_time"),
+                    all_day=e.get("all_day", False),
+                    description=e.get("description"),
+                    recurrence_rule=e.get("recurrence"),
+                )
+                for e in pending.event_data
+            ]
+        )
+
+        if self._event_service:
+            for event_data in events_to_create:
+                event = self._event_service.create(event_data, user_uid)
+                created_events.append(event)
+        else:
+            # Return fake events with IDs
+            for _ in events_to_create:
+
+                @dataclass
+                class FakeEvent:
+                    id: UUID
+
+                created_events.append(FakeEvent(id=uuid4()))
+
+        return created_events
+
+    def cancel(self, pending_id: UUID, user_uid: str) -> None:
+        pending = self._pending.get(pending_id)
+        if not pending:
+            raise ValueError("PendingEvent not found")
+        pending.status = "cancelled"
+
+    def cleanup_expired(self) -> int:
+        now = datetime.now(timezone.utc)
+        count = 0
+        for pending in self._pending.values():
+            if pending.status == "pending" and pending.expires_at < now:
+                pending.status = "expired"
+                count += 1
+        return count

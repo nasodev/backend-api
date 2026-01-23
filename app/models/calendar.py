@@ -2,13 +2,22 @@
 
 import uuid
 from datetime import datetime, date
+from enum import Enum
 from typing import Optional
 
-from sqlalchemy import String, Boolean, Text, ForeignKey, DateTime, Date, Index
+from sqlalchemy import String, Boolean, Text, ForeignKey, DateTime, Date, Index, Float
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.external.database import Base
+
+
+class PendingEventStatus(str, Enum):
+    """PendingEvent 상태"""
+    PENDING = "pending"      # 대기 중
+    CONFIRMED = "confirmed"  # 승인됨 → Event 생성됨
+    EXPIRED = "expired"      # 만료됨
+    CANCELLED = "cancelled"  # 취소됨
 
 
 class FamilyMember(Base):
@@ -121,3 +130,45 @@ class RecurrenceException(Base):
 
     # Relationships
     event: Mapped["Event"] = relationship(back_populates="exceptions")
+
+
+class PendingEvent(Base):
+    """AI 파싱 후 확인 대기 중인 일정"""
+    __tablename__ = "pending_events"
+    __table_args__ = (
+        Index("ix_pending_events_created_by", "created_by"),
+        Index("ix_pending_events_status", "status"),
+        Index("ix_pending_events_expires_at", "expires_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+
+    # 파싱된 일정 데이터 (JSON 배열)
+    event_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+    # 원본 입력
+    source_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_image_hash: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )  # 이미지 해시 (중복 방지용)
+
+    # 메타데이터
+    created_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("family_members.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default=PendingEventStatus.PENDING.value
+    )
+    confidence: Mapped[float] = mapped_column(Float, default=1.0)
+    ai_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # TTL 관리
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    # Relationships
+    created_by_member: Mapped["FamilyMember"] = relationship()

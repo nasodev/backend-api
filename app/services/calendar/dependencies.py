@@ -8,12 +8,14 @@ from app.services.calendar.protocol import (
     MemberServiceProtocol,
     CategoryServiceProtocol,
     EventServiceProtocol,
+    PendingEventServiceProtocol,
 )
 from app.services.calendar.service import (
     MemberService,
     CategoryService,
     EventService,
 )
+from app.services.calendar.pending import PendingEventService
 
 
 def get_member_service(
@@ -50,3 +52,15 @@ def get_event_service(
         app.dependency_overrides[get_event_service] = lambda: FakeEventService()
     """
     return EventService(db)
+
+
+def get_pending_event_service(
+    db: Session = Depends(get_db),
+) -> PendingEventServiceProtocol:
+    """
+    PendingEvent 서비스 의존성 주입 포인트
+
+    테스트에서 override 가능:
+        app.dependency_overrides[get_pending_event_service] = lambda: FakePendingEventService()
+    """
+    return PendingEventService(db)
