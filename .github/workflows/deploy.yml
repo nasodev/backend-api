@@ -12,6 +12,10 @@ jobs:
   # Job 1: Run tests
   test:
     runs-on: ubuntu-latest
+    env:
+      # 테스트용 환경변수 (Fake 서비스 사용으로 실제 연결 안함)
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      DEBUG: true
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
