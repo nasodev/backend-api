@@ -1,0 +1,106 @@
+# ============================================
+# 개발 환경용 Docker Compose 설정
+# ============================================
+# 사용법: docker compose up --build
+# 중지: docker compose down
+# 로그 확인: docker compose logs -f
+
+services:
+  # ============================================
+  # backend-api 서비스 (FastAPI 애플리케이션)
+  # ============================================
+  backend-api:
+    # 빌드 설정
+    build:
+      context: .                    # Dockerfile 위치 (현재 디렉토리)
+      target: development           # Dockerfile의 development 단계 사용
+
+    # 컨테이너 이름 (docker ps에서 보이는 이름)
+    container_name: backend-api-dev
+
+    # 포트 매핑: "호스트포트:컨테이너포트"
+    # 로컬에서 localhost:28000으로 접속 → 컨테이너 8000으로 전달
+    ports:
+      - "28000:8000"
+
+    # 볼륨 마운트: "호스트경로:컨테이너경로:옵션"
+    # 로컬 파일을 컨테이너에 연결 (코드 변경 시 즉시 반영)
+    # :ro = read-only (컨테이너에서 수정 불가)
+    volumes:
+      - ./app:/app/app:ro              # 앱 소스 코드
+      - ./alembic:/app/alembic:ro      # DB 마이그레이션 파일
+      - ./alembic.ini:/app/alembic.ini:ro  # Alembic 설정
+      - ./tests:/app/tests:ro          # 테스트 파일
+      - ./firebase:/app/firebase:ro    # Firebase 인증 파일
+
+    # 환경 변수 설정
+    # ${VAR:-default}: 환경변수가 없으면 default 값 사용
+    environment:
+      - DEBUG=true
+      # postgres15: Docker 네트워크에서 PostgreSQL 컨테이너 이름으로 접속
+      - DATABASE_URL=postgresql://postgres:${DB_PASSWORD:-postgres}@postgres15:5432/backend_api
+      - CORS_ORIGINS=["http://localhost:3000","http://localhost:5173"]
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/firebase/firebase-credentials.json
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+
+    # 연결할 Docker 네트워크
+    networks:
+      - funq-network
+
+    # 의존성: 기존 postgres15 컨테이너 사용 (외부에서 실행 중)
+    # depends_on은 외부 컨테이너에 사용 불가하므로 주석 처리
+    # depends_on:
+    #   postgres15:
+    #     condition: service_started
+
+    # 재시작 정책: 수동 중지 외에는 항상 재시작
+    restart: unless-stopped
+
+    # 헬스체크 설정 (컨테이너 상태 확인)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s       # 30초마다 체크
+      timeout: 10s        # 10초 내 응답 없으면 실패
+      retries: 3          # 3번 실패하면 unhealthy
+      start_period: 10s   # 시작 후 10초는 실패해도 무시
+
+  # ============================================
+  # PostgreSQL 데이터베이스 서비스
+  # ============================================
+  # 주석 처리: 기존 postgres15 컨테이너 사용
+  # 새로 설치하는 경우 아래 주석을 해제하세요
+  #
+  # postgres15:
+  #   image: postgres:15
+  #   container_name: postgres15
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+  #     - POSTGRES_DB=backend_api
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - funq-network
+  #   ports:
+  #     - "5432:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# ============================================
+# 네트워크 설정
+# ============================================
+networks:
+  funq-network:
+    name: funq-network    # 네트워크 이름
+    external: true        # 외부에서 생성된 네트워크 사용
+                          # 없으면 먼저 생성: docker network create funq-network
+
+# ============================================
+# 볼륨 설정
+# ============================================
+# 기존 postgres15 컨테이너 사용 시 볼륨 불필요
+# volumes:
+#   postgres_data:

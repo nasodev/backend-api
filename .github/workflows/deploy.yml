@@ -4,10 +4,14 @@ on:
   push:
     branches: [ main ]
 
-jobs:
-  test-and-deploy:
-    runs-on: ubuntu-latest
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
+jobs:
+  # Job 1: Run tests
+  test:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -26,6 +30,54 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
+  # Job 2: Build and push Docker image
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Job 3: Deploy to server
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -34,14 +86,48 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
+            set -e
+
             cd /home/funq/dev/backend-api
+
+            # Pull latest code for alembic files
             git fetch origin main
             git reset --hard origin/main
 
-            source venv/bin/activate
-            pip install -r requirements.txt
+            # Login to GHCR (PAT 필요: Settings > Developer settings > Personal access tokens)
+            # GHCR_TOKEN secret에 read:packages 권한이 있는 PAT 저장 필요
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Run migrations
-            alembic upgrade head
+            # Pull latest image
+            docker pull ghcr.io/${{ github.repository }}:latest
 
-            sudo systemctl restart backend-api
+            # Run database migrations in a separate container
+            docker run --rm \
+              --network funq-network \
+              -v $(pwd)/alembic:/app/alembic:ro \
+              -v $(pwd)/alembic.ini:/app/alembic.ini:ro \
+              --env-file /home/funq/config/backend-api/.env.prod \
+              ghcr.io/${{ github.repository }}:latest \
+              alembic upgrade head
+
+            # Stop existing container
+            docker compose -f docker-compose.prod.yml down || true
+
+            # Start new container
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Wait for health check
+            echo "Waiting for service to be healthy..."
+            sleep 10
+
+            # Verify deployment
+            if curl -sf http://localhost:8000/health > /dev/null; then
+              echo "Deployment successful!"
+            else
+              echo "Health check failed!"
+              docker logs backend-api --tail 50
+              exit 1
+            fi
+
+            # Clean up old images
+            docker image prune -f

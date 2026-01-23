@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+tests/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Firebase credentials (mount separately)
+firebase/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts
+scripts/
+
+# Misc
+*.log
+.DS_Store
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# CI/CD
+.github/
+
+# Claude
+.claude/

@@ -27,8 +27,14 @@ htmlcov/
 *.log
 .DS_Store
 
+# Firebase credentials (sensitive)
 firebase/
 
+# Documentation (generated)
 docs/
 
+# Scripts (local utilities)
 scripts/
+
+# Docker (local volumes, not docker-compose files)
+.docker/
