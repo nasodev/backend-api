@@ -7,7 +7,7 @@
 #
 # 사전 준비:
 # 1. docker network create funq-network
-# 2. /home/funq/config/backend-api/.env.prod 파일 생성
+# 2. /home/funq/dev/config/backend-api/.env.prod 파일 생성
 # 3. Firebase 인증 파일 복사
 
 services:
@@ -37,13 +37,13 @@ services:
       - ./alembic:/app/alembic:ro
       - ./alembic.ini:/app/alembic.ini:ro
       # Firebase 인증 파일 (서버의 config 디렉토리에서)
-      - /home/funq/config/backend-api/firebase:/app/firebase:ro
+      - /home/funq/dev/config/backend-api/firebase:/app/firebase:ro
 
     # 환경 변수 파일
     # 민감한 정보(DB 비밀번호, API 키 등)는 별도 파일로 관리
     # 이 파일은 git에 올리지 않음
     env_file:
-      - /home/funq/config/backend-api/.env.prod
+      - /home/funq/dev/config/backend-api/.env.prod
 
     # 추가 환경 변수 (env_file보다 우선)
     environment:

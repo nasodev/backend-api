@@ -5,7 +5,7 @@
 set -e
 
 # Configuration
-CONFIG_DIR="/home/funq/config/backend-api"
+CONFIG_DIR="/home/funq/dev/config/backend-api"
 PROJECT_DIR="/home/funq/dev/backend-api"
 NETWORK_NAME="funq-network"
 POSTGRES_CONTAINER="postgres"

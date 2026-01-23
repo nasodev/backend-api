@@ -106,7 +106,7 @@ jobs:
               --network funq-network \
               -v $(pwd)/alembic:/app/alembic:ro \
               -v $(pwd)/alembic.ini:/app/alembic.ini:ro \
-              --env-file /home/funq/config/backend-api/.env.prod \
+              --env-file /home/funq/dev/config/backend-api/.env.prod \
               ghcr.io/${{ github.repository }}:latest \
               alembic upgrade head
 
