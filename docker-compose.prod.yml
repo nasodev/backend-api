@@ -37,7 +37,7 @@ services:
 
     # 환경 변수 파일 (민감 정보는 별도 파일로 관리, git 제외)
     env_file:
-      - /home/funq/dev/env/config/backend-api/.env.prod
+      - /home/funq/dev/config/backend-api/.env.prod
 
     # 추가 환경 변수 (env_file보다 우선)
     environment:
