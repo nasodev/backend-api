@@ -7,7 +7,7 @@
 #
 # 사전 준비:
 # 1. .env 파일 생성 (cp .env.example .env)
-# 2. postgres15 컨테이너가 funq-network에 연결되어 실행 중이어야 함
+# 2. postgres 컨테이너가 funq-network에 연결되어 실행 중이어야 함
 
 services:
   # ============================================
@@ -46,7 +46,7 @@ services:
     # .env는 localhost용이므로, Docker에서는 컨테이너 이름으로 변경
     environment:
       - DEBUG=true
-      - DATABASE_URL=postgresql://backend_api:${DB_PASSWORD}@postgres15:5432/backend_api
+      - DATABASE_URL=postgresql://backend_api:${DB_PASSWORD}@postgres:5432/backend_api
 
     # 연결할 Docker 네트워크
     networks:
@@ -66,12 +66,12 @@ services:
   # ============================================
   # PostgreSQL 데이터베이스 서비스
   # ============================================
-  # 주석 처리: 기존 postgres15 컨테이너 사용
+  # 주석 처리: 기존 postgres 컨테이너 사용
   # 새로 설치하는 경우 아래 주석을 해제하세요
   #
-  # postgres15:
-  #   image: postgres:15
-  #   container_name: postgres15
+  # postgres:
+  #   image: postgres:16
+  #   container_name: postgres
   #   environment:
   #     - POSTGRES_USER=postgres
   #     - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
@@ -100,6 +100,6 @@ networks:
 # ============================================
 # 볼륨 설정
 # ============================================
-# 기존 postgres15 컨테이너 사용 시 볼륨 불필요
+# 기존 postgres 컨테이너 사용 시 볼륨 불필요
 # volumes:
 #   postgres_data:

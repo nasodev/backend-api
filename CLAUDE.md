@@ -98,34 +98,68 @@ tests/
 └── e2e/                 # E2E 테스트 (실제 서비스)
     ├── test_firebase.py
     └── test_claude_service.py
+
+# 루트 레벨 파일
+Dockerfile               # 멀티 스테이지 빌드 (builder/production/development)
+docker-compose.yml       # 로컬 개발 환경
+docker-compose.prod.yml  # 프로덕션 환경
+run-local.sh             # 로컬 실행 스크립트 (docker/venv)
+deploy/
+└── docker-setup.sh      # 서버 초기 설정 스크립트
 ```
 
 ## Commands
 
+### Docker (로컬 개발)
+
 ```bash
-# Run dev server
+# Docker로 실행
+./run-local.sh
+# 또는
+docker compose up --build
+
+# 테스트 실행
+docker exec backend-api-dev pytest
+
+# 마이그레이션 실행
+docker exec backend-api-dev alembic upgrade head
+
+# 마이그레이션 생성
+docker exec backend-api-dev alembic revision --autogenerate -m "description"
+
+# 컨테이너 로그
+docker logs -f backend-api-dev
+```
+
+### venv (기존 방식)
+
+```bash
+# venv로 실행
+./run-local.sh venv
+# 또는
 uvicorn app.main:app --reload
 
-# Run tests (E2E 제외, 기본)
+# 테스트
 pytest
 
-# Run all tests (E2E 포함)
+# 마이그레이션
+alembic upgrade head
+```
+
+### 테스트 옵션
+
+```bash
+# E2E 제외 (기본)
+pytest
+
+# 전체 테스트 (E2E 포함)
 pytest -m ""
 
-# Run with coverage
+# 커버리지
 pytest --cov=app --cov-report=term-missing
 
-# Run E2E tests only
+# E2E만
 pytest -m e2e
-
-# Create migration
-alembic revision --autogenerate -m "description"
-
-# Apply migrations
-alembic upgrade head
-
-# Rollback migration
-alembic downgrade -1
 ```
 
 ## Conventions
@@ -221,18 +255,23 @@ alembic downgrade -1
 
 ```
 DEBUG=false
+DB_PASSWORD=your_password
 DATABASE_URL=postgresql://user:pass@localhost:5432/backend_api
 CORS_ORIGINS=["https://blog.funq.kr","https://chat.funq.kr","https://calendar.funq.kr"]
 GOOGLE_APPLICATION_CREDENTIALS=path/to/firebase-credentials.json
 ANTHROPIC_API_KEY=your-api-key
 ```
 
+**참고**: Docker 환경에서는 `docker-compose.yml`이 `DATABASE_URL`을 오버라이드함
+
 ## Deployment
 
 - **Server**: `/home/funq/dev/backend-api`
-- **Service**: `backend-api.service` (systemd)
+- **Container**: Docker (GHCR 이미지: `ghcr.io/nasodev/backend-api`)
+- **Config**: `/home/funq/config/backend-api/.env.prod`
 - **Proxy**: Nginx → port 8000
 - **CI/CD**: GitHub Actions on push to `main`
+- **Network**: `funq-network` (PostgreSQL과 공유)
 
 ## Testing Guidelines
 
