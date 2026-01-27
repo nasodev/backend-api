@@ -1,6 +1,6 @@
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import engine_from_config, text
 from sqlalchemy import pool
 
 from alembic import context
@@ -55,6 +55,20 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
+        # 마이그레이션 후 backend_api 사용자에게 권한 부여
+        # postgres 사용자로 마이그레이션 실행 시에만 적용됨
+        try:
+            connection.execute(
+                text("GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO backend_api")
+            )
+            connection.execute(
+                text("GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO backend_api")
+            )
+            connection.commit()
+        except Exception:
+            # backend_api 사용자로 실행 시 권한 부여 불가 - 무시
+            pass
 
 
 if context.is_offline_mode():

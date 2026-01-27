@@ -28,9 +28,8 @@ router = APIRouter(prefix="/ai", tags=["calendar-ai"])
 class CalendarAIRequest(BaseModel):
     """캘린더 AI 파싱 요청"""
 
-    text: str = Field(
-        ...,
-        min_length=1,
+    text: str | None = Field(
+        default=None,
         max_length=10000,
         description="파싱할 텍스트 (예: '내일 오후 3시 치과 예약')",
     )
@@ -85,8 +84,18 @@ async def parse_schedule(
     - 파싱 결과는 PendingEvent에 저장 (30분 TTL)
     - 클라이언트에서 /confirm 호출 시 실제 Event로 변환
     """
-    # 달력이 호출어 추가
-    prompt = f"달력아 {request.text}"
+    # 텍스트와 이미지 둘 다 없으면 에러
+    if not request.text and not request.image_base64:
+        return CalendarAIResponse(
+            success=False,
+            error="텍스트 또는 이미지 중 하나는 필수입니다",
+        )
+
+    # 달력이 호출어 추가 (이미지만 있을 때는 기본 프롬프트 사용)
+    if request.text:
+        prompt = f"달력아 {request.text}"
+    else:
+        prompt = "달력아 이 이미지에서 일정을 추출해줘"
 
     # Claude AI 호출
     response = await claude_service.chat(
@@ -120,7 +129,7 @@ async def parse_schedule(
     pending = pending_service.create(
         event_data=response.parsed_events,
         user_uid=current_user.uid,
-        source_text=request.text,
+        source_text=request.text or "[이미지]",
         source_image_hash=None,  # TODO: 이미지 해시 계산
         ai_message=response.ai_message,
     )

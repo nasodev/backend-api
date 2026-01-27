@@ -38,13 +38,19 @@ WORKDIR /app
 
 # 런타임에 필요한 시스템 패키지만 설치
 # - libpq5: PostgreSQL 클라이언트 런타임 라이브러리
-# - curl: 헬스체크에 사용
+# - curl: 헬스체크 및 Claude CLI 설치에 사용
 # useradd: 보안을 위해 non-root 사용자 생성
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --shell /bin/bash appuser
+
+# Claude CLI 설치 (AI 일정 파싱 기능에 필요)
+# 심볼릭 링크를 따라가서 실제 바이너리를 /usr/local/bin에 복사
+RUN curl -fsSL https://claude.ai/install.sh | bash \
+    && cp -L /root/.local/bin/claude /usr/local/bin/claude \
+    && chmod +x /usr/local/bin/claude
 
 # builder 단계에서 설치한 Python 패키지 복사
 # /root/.local (builder) → /home/appuser/.local (production)
@@ -101,6 +107,12 @@ USER root
 # 테스트 관련 패키지 설치
 COPY requirements.txt .
 RUN pip install --no-cache-dir pytest pytest-cov pytest-asyncio httpx
+
+# Claude CLI 설치 및 PATH 설정
+# claude는 심볼릭 링크이므로 실제 파일을 복사 (-L 옵션으로 링크 따라감)
+RUN curl -fsSL https://claude.ai/install.sh | bash \
+    && cp -L /root/.local/bin/claude /usr/local/bin/claude \
+    && chmod +x /usr/local/bin/claude
 
 # 테스트 파일은 docker-compose.yml에서 볼륨 마운트로 연결
 # (빌드 시점이 아닌 실행 시점에 연결됨)
