@@ -36,6 +36,7 @@ services:
       - ./alembic.ini:/app/alembic.ini:ro  # Alembic 설정
       - ./tests:/app/tests:ro          # 테스트 파일
       - ./firebase:/app/firebase:ro    # Firebase 인증 파일
+      - ~/.claude:/home/appuser/.claude  # Claude CLI 로그인 정보 유지
 
     # 환경 변수 파일에서 로드
     # .env 파일의 모든 환경변수를 컨테이너에 전달

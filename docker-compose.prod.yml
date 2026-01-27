@@ -34,6 +34,7 @@ services:
       - ./alembic:/app/alembic:ro          # DB 마이그레이션 파일
       - ./alembic.ini:/app/alembic.ini:ro  # Alembic 설정
       - /home/funq/dev/config/backend-api/firebase:/app/firebase:ro  # Firebase 인증 파일
+      - /home/funq/.claude:/home/appuser/.claude  # Claude CLI 로그인 정보
 
     # 환경 변수 파일 (민감 정보는 별도 파일로 관리, git 제외)
     env_file:
