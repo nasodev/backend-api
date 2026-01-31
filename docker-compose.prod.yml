@@ -1,6 +1,7 @@
 # ============================================
 # 프로덕션 환경용 Docker Compose 설정
 # ============================================
+name: backend-api
 # 사용법: docker compose -f docker-compose.prod.yml up -d
 # 중지: docker compose -f docker-compose.prod.yml down
 # 로그 확인: docker compose -f docker-compose.prod.yml logs -f
