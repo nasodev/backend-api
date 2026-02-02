@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import health, auth, ai
+from app.routers import health, auth, ai, ccusage
 from app.routers.calendar import router as calendar_router
 from app.exception_handlers import register_exception_handlers
 
@@ -32,6 +32,7 @@ app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(ai.router)
 app.include_router(calendar_router)
+app.include_router(ccusage.router)
 
 
 @app.get("/")
