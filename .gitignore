@@ -39,3 +39,6 @@ scripts/
 # Docker (local volumes, not docker-compose files)
 .docker/
 docker-compose.override.yml
+
+# Git worktrees
+.worktrees/

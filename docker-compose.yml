@@ -1,106 +1,48 @@
-# ============================================
-# 로컬 개발 환경용 Docker Compose 설정
-# ============================================
-# 사용법: ./run-local.sh 또는 docker compose up --build
-# 중지: docker compose down
-# 로그 확인: docker compose logs -f
-#
-# 사전 준비:
-# 1. .env 파일 생성 (cp .env.example .env)
-# 2. postgres 컨테이너가 funq-network에 연결되어 실행 중이어야 함
+name: funq-backend-api
 
 services:
-  # ============================================
-  # backend-api 서비스 (FastAPI 애플리케이션)
-  # ============================================
   backend-api:
-    # 빌드 설정
     build:
-      context: .                    # Dockerfile 위치 (현재 디렉토리)
-      target: development           # Dockerfile의 development 단계 사용
+      context: .
+      target: development
 
-    # 컨테이너 이름 (docker ps에서 보이는 이름)
-    container_name: backend-api-dev
+    # container_name 삭제 (중요!)
 
-    # 포트 매핑: "호스트포트:컨테이너포트"
-    # 로컬에서 localhost:28000으로 접속 → 컨테이너 8000으로 전달
     ports:
       - "28000:8000"
 
-    # 볼륨 마운트: "호스트경로:컨테이너경로:옵션"
-    # 로컬 파일을 컨테이너에 연결 (코드 변경 시 즉시 반영)
-    # :ro = read-only (컨테이너에서 수정 불가)
     volumes:
-      - ./app:/app/app:ro              # 앱 소스 코드
-      - ./alembic:/app/alembic:ro      # DB 마이그레이션 파일
-      - ./alembic.ini:/app/alembic.ini:ro  # Alembic 설정
-      - ./tests:/app/tests:ro          # 테스트 파일
-      - ./firebase:/app/firebase:ro    # Firebase 인증 파일
-      - ~/.claude:/home/appuser/.claude  # Claude CLI 로그인 정보 유지
+      - ./app:/app/app:ro
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+      - ./tests:/app/tests:ro
+      - ./firebase:/app/firebase:ro
+      - ~/.claude:/home/appuser/.claude
 
-    # 환경 변수 파일에서 로드
-    # .env 파일의 모든 환경변수를 컨테이너에 전달
     env_file:
       - .env
 
-    # Docker 전용 오버라이드 (env_file보다 우선)
-    # .env는 localhost용이므로, Docker에서는 컨테이너 이름으로 변경
     environment:
       - DEBUG=true
       - DATABASE_URL=postgresql://backend_api:${DB_PASSWORD}@postgres:5432/backend_api
 
-    # 연결할 Docker 네트워크
     networks:
       - funq-network
 
-    # 재시작 정책: 수동 중지 외에는 항상 재시작
+    labels:
+      - "com.funq.project=true"
+      - "com.funq.app=backend-api"
+
     restart: unless-stopped
 
-    # 헬스체크 설정 (컨테이너 상태 확인)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s       # 30초마다 체크
-      timeout: 10s        # 10초 내 응답 없으면 실패
-      retries: 3          # 3번 실패하면 unhealthy
-      start_period: 10s   # 시작 후 10초는 실패해도 무시
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  # ============================================
-  # PostgreSQL 데이터베이스 서비스
-  # ============================================
-  # 주석 처리: 기존 postgres 컨테이너 사용
-  # 새로 설치하는 경우 아래 주석을 해제하세요
-  #
-  # postgres:
-  #   image: postgres:16
-  #   container_name: postgres
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
-  #     - POSTGRES_DB=backend_api
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - funq-network
-  #   ports:
-  #     - "5432:5432"
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-
-# ============================================
-# 네트워크 설정
-# ============================================
 networks:
   funq-network:
-    name: funq-network    # 네트워크 이름
-    external: true        # 외부에서 생성된 네트워크 사용
-                          # 없으면 먼저 생성: docker network create funq-network
-
-# ============================================
-# 볼륨 설정
-# ============================================
-# 기존 postgres 컨테이너 사용 시 볼륨 불필요
-# volumes:
-#   postgres_data:
+    name: funq-network
+    external: true

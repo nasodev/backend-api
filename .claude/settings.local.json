@@ -59,7 +59,17 @@
       "Bash(docker network create:*)",
       "Bash(docker compose:*)",
       "Bash(docker network connect:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(find:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker network inspect:*)",
+      "Bash(DATABASE_URL= python -c \"from app.config.settings import Settings; s = Settings\\(_env_file=None\\)\")",
+      "Bash(unset:*)",
+      "Bash(DATABASE_URL=\"\" python:*)",
+      "Bash(git merge:*)",
+      "Bash(docker inspect:*)",
+      "Bash(jq:*)",
+      "Bash(docker rename:*)"
     ]
   }
 }
