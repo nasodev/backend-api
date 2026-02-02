@@ -6,6 +6,7 @@ from app.models.calendar import (
     PendingEvent,
     PendingEventStatus,
 )
+from app.models.ccusage import CcusageDailyRecord
 
 __all__ = [
     "FamilyMember",
@@ -14,4 +15,5 @@ __all__ = [
     "RecurrenceException",
     "PendingEvent",
     "PendingEventStatus",
+    "CcusageDailyRecord",
 ]
