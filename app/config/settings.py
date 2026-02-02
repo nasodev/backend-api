@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     claude_timeout_seconds: int = 120
     claude_max_timeout_seconds: int = 300
 
+    # CCUsage
+    ccusage_api_key: str = ""
+
     # Firebase Test (E2E 테스트용, 선택)
     test_firebase_id: str | None = None
     test_firebase_password: str | None = None
