@@ -16,6 +16,9 @@ python-dateutil==2.9.0.post0
 # Firebase
 firebase-admin==6.4.0
 
+# HTML parsing
+beautifulsoup4==4.12.3
+
 # Testing
 pytest==8.3.4
 pytest-cov==7.0.0
