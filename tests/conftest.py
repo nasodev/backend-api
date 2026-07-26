@@ -13,12 +13,15 @@ from app.services.calendar.dependencies import (
 from app.dependencies.auth import get_current_user
 from app.dependencies.token_verifier import get_token_verifier
 from app.dependencies.entities import FirebaseUser
+from app.services.blog.dependencies import get_blog_service
+from app.dependencies.blog_admin import get_blog_admin
 from tests.fakes import (
     FakeAuthService,
     FakeClaudeService,
     FakeMemberService,
     FakeCategoryService,
     FakeEventService,
+    FakeBlogService,
 )
 
 
@@ -163,6 +166,33 @@ def client_with_fake_calendar_services(
     app.dependency_overrides[get_category_service] = lambda: fake_category_service
     app.dependency_overrides[get_event_service] = lambda: fake_event_service
     app.dependency_overrides[get_current_user] = lambda: fake_user
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+# Blog Service Fixtures
+
+@pytest.fixture
+def fake_blog_service():
+    """Fake Blog 서비스"""
+    return FakeBlogService()
+
+
+@pytest.fixture
+def client_with_fake_blog_service(fake_blog_service):
+    """Blog 서비스가 Fake로 대체된 테스트 클라이언트 (공개 엔드포인트용, 인증 없음)"""
+    app.dependency_overrides[get_blog_service] = lambda: fake_blog_service
+    client = TestClient(app)
+    yield client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client_with_fake_blog_admin(fake_blog_service, fake_user):
+    """Blog 서비스 Fake + 관리자 인증 통과 클라이언트"""
+    app.dependency_overrides[get_blog_service] = lambda: fake_blog_service
+    app.dependency_overrides[get_blog_admin] = lambda: fake_user
     client = TestClient(app)
     yield client
     app.dependency_overrides.clear()

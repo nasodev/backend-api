@@ -9,6 +9,7 @@ from tests.fakes.fake_calendar import (
     FakeEventService,
 )
 from tests.fakes.fake_ccusage import FakeCcusageService
+from tests.fakes.fake_blog import FakeBlogService
 
 __all__ = [
     "FakeAuthService",
@@ -18,4 +19,5 @@ __all__ = [
     "FakeCategoryService",
     "FakeEventService",
     "FakeCcusageService",
+    "FakeBlogService",
 ]
