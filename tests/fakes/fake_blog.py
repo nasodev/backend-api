@@ -1,7 +1,7 @@
 """블로그 서비스 Fake 구현"""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 from fastapi import HTTPException
@@ -31,8 +31,8 @@ class FakeBlogService:
             reading_time_minutes=processed.reading_time_minutes,
             view_count=0,
             is_published=is_published,
-            published_at=datetime(2026, 1, 1),
-            updated_at=datetime(2026, 1, 1),
+            published_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            updated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
         )
         self.posts[slug] = post
         return post
@@ -82,7 +82,7 @@ class FakeBlogService:
             post.reading_time_minutes = processed.reading_time_minutes
         for key, value in fields.items():
             setattr(post, key, value)
-        post.updated_at = datetime.utcnow()
+        post.updated_at = datetime.now(timezone.utc)
         return post
 
     def delete(self, slug):
@@ -91,5 +91,7 @@ class FakeBlogService:
 
     def increment_view(self, slug):
         post = self.get_any(slug)
+        if not post.is_published:
+            raise HTTPException(404, detail="Post not found")
         post.view_count += 1
         return post.view_count

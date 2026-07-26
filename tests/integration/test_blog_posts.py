@@ -52,6 +52,11 @@ class TestPublicPosts:
         response = client_with_fake_blog_service.post("/blog/posts/nope/view")
         assert response.status_code == 404
 
+    def test_view_unpublished_404(self, client_with_fake_blog_service, fake_blog_service):
+        fake_blog_service.add_post("draft", is_published=False)
+        response = client_with_fake_blog_service.post("/blog/posts/draft/view")
+        assert response.status_code == 404
+
 
 class TestAdminPosts:
     def test_create_requires_auth(self, client):
@@ -107,6 +112,20 @@ class TestAdminPosts:
     def test_update_missing_404(self, client_with_fake_blog_admin):
         response = client_with_fake_blog_admin.put("/blog/posts/nope", json={"title": "x"})
         assert response.status_code == 404
+
+    def test_update_explicit_null_rejected_422(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("target")
+        response = client_with_fake_blog_admin.put(
+            "/blog/posts/target", json={"title": None}
+        )
+        assert response.status_code == 422
+
+    def test_update_cover_image_null_allowed(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("target")
+        response = client_with_fake_blog_admin.put(
+            "/blog/posts/target", json={"cover_image_url": None}
+        )
+        assert response.status_code == 200
 
     def test_delete_success(self, client_with_fake_blog_admin, fake_blog_service):
         fake_blog_service.add_post("doomed")

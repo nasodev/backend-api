@@ -33,8 +33,8 @@ def upgrade() -> None:
         sa.Column('reading_time_minutes', sa.Integer(), nullable=False, server_default='1'),
         sa.Column('view_count', sa.Integer(), nullable=False, server_default='0'),
         sa.Column('is_published', sa.Boolean(), nullable=False, server_default=sa.true()),
-        sa.Column('published_at', sa.DateTime(), nullable=False),
-        sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.func.now()),
+        sa.Column('published_at', sa.DateTime(timezone=True), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
     # Create index

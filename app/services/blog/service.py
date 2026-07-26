@@ -1,6 +1,6 @@
 """블로그 서비스 구현"""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import update
@@ -62,8 +62,8 @@ class BlogService:
             toc=processed.toc,
             reading_time_minutes=processed.reading_time_minutes,
             is_published=data.is_published,
-            published_at=data.published_at or datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            published_at=data.published_at or datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
         self.db.add(post)
         self.db.commit()
@@ -83,7 +83,7 @@ class BlogService:
         for key, value in fields.items():
             setattr(post, key, value)
 
-        post.updated_at = datetime.utcnow()
+        post.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(post)
         return post
@@ -96,7 +96,7 @@ class BlogService:
     def increment_view(self, slug: str) -> int:
         result = self.db.execute(
             update(BlogPost)
-            .where(BlogPost.slug == slug)
+            .where(BlogPost.slug == slug, BlogPost.is_published.is_(True))
             .values(view_count=BlogPost.view_count + 1)
             .returning(BlogPost.view_count)
         )
