@@ -1,3 +1,11 @@
+from app.schemas.blog import (
+    BlogPostCreate,
+    BlogPostUpdate,
+    BlogPostSummary,
+    BlogPostDetail,
+    ViewCountResponse,
+    ImageUploadResponse,
+)
 from app.schemas.calendar import (
     # Recurrence
     RecurrenceFrequency,
@@ -21,6 +29,13 @@ from app.schemas.calendar import (
 )
 
 __all__ = [
+    # Blog
+    "BlogPostCreate",
+    "BlogPostUpdate",
+    "BlogPostSummary",
+    "BlogPostDetail",
+    "ViewCountResponse",
+    "ImageUploadResponse",
     # Recurrence
     "RecurrenceFrequency",
     "Weekday",

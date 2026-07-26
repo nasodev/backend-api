@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     test_firebase_password: str | None = None
     test_firebase_api_key: str | None = None
 
+    # Blog
+    blog_admin_uids: list[str] = []
+    blog_image_dir: str = "data/blog-images"
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.routers import health, auth, ai, ccusage
 from app.routers.calendar import router as calendar_router
+from app.routers.blog import router as blog_router
 from app.exception_handlers import register_exception_handlers
 
 settings = get_settings()
@@ -33,6 +34,7 @@ app.include_router(auth.router)
 app.include_router(ai.router)
 app.include_router(calendar_router)
 app.include_router(ccusage.router)
+app.include_router(blog_router)
 
 
 @app.get("/")

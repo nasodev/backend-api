@@ -70,6 +70,12 @@ COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser alembic/ ./alembic/
 COPY --chown=appuser:appuser alembic.ini ./
 
+# 블로그 이미지 저장 디렉토리 미리 생성 + 소유권 설정
+# 이유: 이름 있는 볼륨(named volume)을 처음 마운트할 때 Docker가 이미지의
+# 마운트 지점 소유권을 그대로 복사함. 디렉토리가 없거나 root 소유면
+# appuser가 쓰기 실패함 (development 스테이지는 이 스테이지를 상속하므로 함께 적용됨)
+RUN mkdir -p /app/data/blog-images && chown appuser:appuser /app/data/blog-images
+
 # non-root 사용자로 전환 (보안 강화)
 # root로 실행하면 컨테이너 탈출 시 호스트에 영향 줄 수 있음
 USER appuser

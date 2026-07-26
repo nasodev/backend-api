@@ -36,6 +36,7 @@ services:
       - ./alembic.ini:/app/alembic.ini:ro  # Alembic 설정
       - /home/funq/dev/config/backend-api/firebase:/app/firebase:ro  # Firebase 인증 파일
       - /home/funq/.claude:/home/appuser/.claude  # Claude CLI 로그인 정보
+      - blog-images:/app/data/blog-images  # 블로그 이미지 저장소
 
     # 환경 변수 파일 (민감 정보는 별도 파일로 관리, git 제외)
     env_file:
@@ -88,3 +89,9 @@ networks:
   funq-network:
     name: funq-network
     external: true            # 기존에 생성된 네트워크 사용
+
+# ============================================
+# 볼륨 설정
+# ============================================
+volumes:
+  blog-images:

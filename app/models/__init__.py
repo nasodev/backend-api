@@ -7,6 +7,7 @@ from app.models.calendar import (
     PendingEventStatus,
 )
 from app.models.ccusage import CcusageDailyRecord
+from app.models.blog import BlogPost
 
 __all__ = [
     "FamilyMember",
@@ -16,4 +17,5 @@ __all__ = [
     "PendingEvent",
     "PendingEventStatus",
     "CcusageDailyRecord",
+    "BlogPost",
 ]

@@ -18,6 +18,7 @@ services:
       - ./tests:/app/tests:ro
       - ./firebase:/app/firebase:ro
       - ~/.claude:/home/appuser/.claude
+      - blog-images:/app/data/blog-images
 
     env_file:
       - .env
@@ -46,3 +47,6 @@ networks:
   funq-network:
     name: funq-network
     external: true
+
+volumes:
+  blog-images:
