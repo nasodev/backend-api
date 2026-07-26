@@ -51,3 +51,87 @@ class TestPublicPosts:
     def test_view_missing_404(self, client_with_fake_blog_service):
         response = client_with_fake_blog_service.post("/blog/posts/nope/view")
         assert response.status_code == 404
+
+
+class TestAdminPosts:
+    def test_create_requires_auth(self, client):
+        response = client.post("/blog/posts", json={})
+        assert response.status_code == 403  # HTTPBearer가 자격 증명 없음 거부
+
+    def test_create_success(self, client_with_fake_blog_admin):
+        response = client_with_fake_blog_admin.post(
+            "/blog/posts",
+            json={
+                "slug": "new-post",
+                "title": "새 글",
+                "description": "설명",
+                "content_html": "<h2>섹션</h2><p>본문</p>",
+                "tags": ["test"],
+            },
+        )
+        assert response.status_code == 201
+        body = response.json()
+        assert body["slug"] == "new-post"
+        assert body["toc"] == [{"level": "two", "text": "섹션", "slug": "섹션"}]
+
+    def test_create_duplicate_slug_409(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("existing")
+        response = client_with_fake_blog_admin.post(
+            "/blog/posts",
+            json={"slug": "existing", "title": "t", "description": "d", "content_html": "<p>x</p>"},
+        )
+        assert response.status_code == 409
+
+    def test_create_invalid_slug_422(self, client_with_fake_blog_admin):
+        response = client_with_fake_blog_admin.post(
+            "/blog/posts",
+            json={"slug": "Invalid Slug!", "title": "t", "description": "d", "content_html": "<p>x</p>"},
+        )
+        assert response.status_code == 422
+
+    def test_update_success(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("target")
+        response = client_with_fake_blog_admin.put(
+            "/blog/posts/target", json={"title": "수정된 제목"}
+        )
+        assert response.status_code == 200
+        assert response.json()["title"] == "수정된 제목"
+
+    def test_update_content_recomputes_toc(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("target")
+        response = client_with_fake_blog_admin.put(
+            "/blog/posts/target", json={"content_html": '<h2 id="new">새 섹션</h2>'}
+        )
+        assert response.json()["toc"] == [{"level": "two", "text": "새 섹션", "slug": "new"}]
+
+    def test_update_missing_404(self, client_with_fake_blog_admin):
+        response = client_with_fake_blog_admin.put("/blog/posts/nope", json={"title": "x"})
+        assert response.status_code == 404
+
+    def test_delete_success(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("doomed")
+        response = client_with_fake_blog_admin.delete("/blog/posts/doomed")
+        assert response.status_code == 204
+        assert "doomed" not in fake_blog_service.posts
+
+    def test_admin_list_includes_unpublished(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("pub")
+        fake_blog_service.add_post("draft", is_published=False)
+        response = client_with_fake_blog_admin.get("/blog/admin/posts")
+        slugs = {p["slug"] for p in response.json()}
+        assert slugs == {"pub", "draft"}
+
+    def test_admin_list_requires_auth(self, client):
+        response = client.get("/blog/admin/posts")
+        assert response.status_code == 403
+
+    def test_admin_detail_includes_unpublished(self, client_with_fake_blog_admin, fake_blog_service):
+        fake_blog_service.add_post("draft", is_published=False)
+        response = client_with_fake_blog_admin.get("/blog/admin/posts/draft")
+        assert response.status_code == 200
+        assert response.json()["slug"] == "draft"
+        assert "content_html" in response.json()
+
+    def test_admin_detail_requires_auth(self, client):
+        response = client.get("/blog/admin/posts/any")
+        assert response.status_code == 403

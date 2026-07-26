@@ -43,3 +43,34 @@ def increment_view(
 ):
     """조회수 +1"""
     return ViewCountResponse(view_count=service.increment_view(slug))
+
+
+@router.post("", response_model=BlogPostDetail, status_code=status.HTTP_201_CREATED)
+def create_post(
+    data: BlogPostCreate,
+    user: FirebaseUser = Depends(get_blog_admin),
+    service: BlogServiceProtocol = Depends(get_blog_service),
+):
+    """글 생성 (관리자)"""
+    return service.create(data)
+
+
+@router.put("/{slug}", response_model=BlogPostDetail)
+def update_post(
+    slug: str,
+    data: BlogPostUpdate,
+    user: FirebaseUser = Depends(get_blog_admin),
+    service: BlogServiceProtocol = Depends(get_blog_service),
+):
+    """글 수정 (관리자)"""
+    return service.update(slug, data)
+
+
+@router.delete("/{slug}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(
+    slug: str,
+    user: FirebaseUser = Depends(get_blog_admin),
+    service: BlogServiceProtocol = Depends(get_blog_service),
+):
+    """글 삭제 (관리자)"""
+    service.delete(slug)
