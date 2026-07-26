@@ -5,6 +5,7 @@ from app.dependencies.entities import FirebaseUser
 from app.dependencies.auth import get_current_user, security
 from app.dependencies.token_verifier import get_token_verifier, TokenVerifier
 from app.dependencies.api_key import verify_api_key
+from app.dependencies.blog_admin import get_blog_admin
 
 __all__ = [
     "AuthServiceProtocol",
@@ -14,4 +15,5 @@ __all__ = [
     "get_token_verifier",
     "TokenVerifier",
     "verify_api_key",
+    "get_blog_admin",
 ]
