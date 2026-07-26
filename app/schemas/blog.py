@@ -51,6 +51,13 @@ class BlogPostUpdate(BaseModel):
     is_published: Optional[bool] = None
     published_at: Optional[datetime] = None
 
+    @field_validator("title", "description", "content_html", "author", "tags", "is_published", "published_at")
+    @classmethod
+    def reject_explicit_null(cls, v, info):
+        if v is None:
+            raise ValueError(f"{info.field_name} cannot be explicitly set to null; omit the field for partial updates")
+        return v
+
     @field_validator("content_html")
     @classmethod
     def content_size(cls, v: Optional[str]) -> Optional[str]:
