@@ -7,6 +7,7 @@ FastAPI backend API for `api.funq.kr`. PostgreSQL database with SQLAlchemy ORM a
 **주요 기능**:
 - AI 채팅 (Claude API)
 - 가족 캘린더 (일정 관리, 반복 일정, 카테고리)
+- 블로그 (blog.funq.kr 콘텐츠 저장소)
 - Firebase 인증
 
 ## Tech Stack
@@ -217,6 +218,22 @@ pytest -m e2e
 - `PUT /calendar/events/{id}` - 일정 수정
 - `DELETE /calendar/events/{id}` - 일정 삭제
 
+### Blog
+
+공개:
+- `GET /blog/posts` - 발행된 글 목록 (tag, page, size 쿼리)
+- `GET /blog/posts/{slug}` - 글 상세 (발행된 글만)
+- `POST /blog/posts/{slug}/view` - 조회수 +1
+- `GET /blog/images/{filename}` - 이미지 서빙
+
+관리자 (`BLOG_ADMIN_UIDS`에 등록된 Firebase UID 필요):
+- `POST /blog/posts` - 글 생성
+- `PUT /blog/posts/{slug}` - 글 수정
+- `DELETE /blog/posts/{slug}` - 글 삭제
+- `GET /blog/admin/posts` - 전체 글 목록 (비발행 포함)
+- `GET /blog/admin/posts/{slug}` - 글 상세 (비발행 포함)
+- `POST /blog/images` - 이미지 업로드
+
 ## Calendar Models
 
 ### FamilyMember (가족 구성원)
@@ -260,6 +277,8 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/backend_api
 CORS_ORIGINS=["https://blog.funq.kr","https://chat.funq.kr","https://calendar.funq.kr"]
 GOOGLE_APPLICATION_CREDENTIALS=path/to/firebase-credentials.json
 ANTHROPIC_API_KEY=your-api-key
+BLOG_ADMIN_UIDS=["your-firebase-uid"]
+BLOG_IMAGE_DIR=data/blog-images
 ```
 
 **참고**: Docker 환경에서는 `docker-compose.yml`이 `DATABASE_URL`을 오버라이드함
