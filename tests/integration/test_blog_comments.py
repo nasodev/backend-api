@@ -409,3 +409,56 @@ def test_private_cache_headers_on_auth_error(comments):
     response = client.get(ROOT, headers=auth('invalid'))
     assert response.status_code == 401
     assert response.headers.get('cache-control') == 'private, no-store'
+
+
+def test_single_comment_refreshes_viewer_permissions_without_private_fields(comments):
+    client, _, _ = comments
+    created = create(client).json()
+    path = f"{ROOT}/{created['id']}"
+    anonymous = client.get(path)
+    assert anonymous.status_code == 200
+    assert anonymous.headers['cache-control'] == 'private, no-store'
+    assert anonymous.headers['vary'] == 'Authorization'
+    assert set(anonymous.json()) == set(created)
+    assert anonymous.json()['can_edit'] is False and anonymous.json()['can_delete'] is False
+    assert anonymous.json()['content'] == created['content']
+    owner = client.get(path, headers=auth())
+    assert owner.status_code == 200
+    assert owner.json()['can_edit'] is True and owner.json()['can_delete'] is True
+    other = client.get(path, headers=auth('other')).json()
+    assert other['can_edit'] is False and other['can_delete'] is False
+    admin = client.get(path, headers=auth('admin')).json()
+    assert admin['can_edit'] is False and admin['can_delete'] is True
+    english = client.get(f"/blog/posts/en-guide/comments/{created['id']}").json()
+    assert english['id'] == created['id'] and english['post_slug'] == 'en-guide'
+    assert 'author_uid' not in owner.text and 'private@example.com' not in owner.text
+
+
+def test_single_comment_checks_requested_language_thread_and_missing_ids(comments):
+    from sqlalchemy import update
+    from app.models.blog import BlogPost
+    client, db, _ = comments
+    created = create(client).json()
+    assert client.get(f"/blog/posts/other/comments/{created['id']}").status_code == 404
+    assert client.get(f"{ROOT}/{uuid4()}").status_code == 404
+    assert client.get(f"/blog/posts/missing/comments/{created['id']}").status_code == 404
+    db.execute(update(BlogPost).where(BlogPost.slug == 'guide').values(is_published=False))
+    db.commit()
+    assert client.get(f"{ROOT}/{created['id']}", headers=auth('admin')).status_code == 404
+    assert client.get(f"/blog/posts/en-guide/comments/{created['id']}").status_code == 200
+
+
+def test_single_comment_rejects_invalid_optional_auth_and_returns_tombstone(comments):
+    client, _, _ = comments
+    created = create(client).json()
+    path = f"{ROOT}/{created['id']}"
+    invalid = client.get(path, headers=auth('invalid'))
+    assert invalid.status_code == 401
+    assert invalid.headers['cache-control'] == 'private, no-store'
+    assert client.get(path, headers={'Authorization': 'Basic bad'}).status_code == 401
+    assert client.delete(path, headers=auth()).status_code == 204
+    marker = client.get(path, headers=auth())
+    assert marker.status_code == 200
+    assert marker.json()['is_deleted'] is True
+    assert marker.json()['author_name'] == marker.json()['content'] == ''
+    assert marker.json()['can_edit'] is False and marker.json()['can_delete'] is False

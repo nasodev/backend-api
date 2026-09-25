@@ -61,6 +61,10 @@ class CommentService:
             source_url=row.source_url,
         )
 
+    def get(self, slug, identifier, user=None):
+        thread = self._thread(slug)
+        return self._public(self._row(identifier, thread), user, slug)
+
     def list(self, slug=None, user=None, limit=20, cursor=None):
         if not 1 <= limit <= 50:
             raise HTTPException(422, 'Limit must be between 1 and 50')

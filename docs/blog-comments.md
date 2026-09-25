@@ -48,6 +48,7 @@ per-comment password; a simultaneously supplied valid token does not own the row
 | Method | Path | Behavior |
 | --- | --- | --- |
 | GET | `/posts/{slug}/comments` | Oldest first, `limit=20` (max 50), optional cursor |
+| GET | `/posts/{slug}/comments/{id}` | One same-thread comment with current viewer permissions |
 | POST | `/posts/{slug}/comments` | `{author_type, content, parent_id?, guest_name?, password?}`; 201 |
 | PATCH | `/posts/{slug}/comments/{id}` | `{content, password?}`; owner or guest password; 200 |
 | DELETE | `/posts/{slug}/comments/{id}` | Optional `{password}`; owner, guest password, or admin; 204 |

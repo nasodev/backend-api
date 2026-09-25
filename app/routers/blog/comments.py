@@ -55,6 +55,12 @@ def create_comment(slug: str, data: CommentCreate, request: Request,
     return service.create(slug, data, user, address(request, service))
 
 
+@router.get('/posts/{slug}/comments/{identifier}', response_model=Comment)
+def get_comment(slug: str, identifier: UUID,
+                user=Depends(optional_comment_user), service=Depends(get_comment_service)):
+    return service.get(slug, identifier, user)
+
+
 @router.patch('/posts/{slug}/comments/{identifier}', response_model=Comment)
 def update_comment(slug: str, identifier: UUID, data: CommentUpdate, request: Request,
                    user=Depends(optional_comment_user), service=Depends(get_comment_service)):
