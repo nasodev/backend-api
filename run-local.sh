@@ -43,7 +43,7 @@ case "$MODE" in
         fi
 
         echo "Starting backend-api on port 28000..."
-        uvicorn app.main:app --reload --host 0.0.0.0 --port 28000
+        uvicorn app.main:app --reload --host 0.0.0.0 --port 28000 --no-proxy-headers
         ;;
 
     *)

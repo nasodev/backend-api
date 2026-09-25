@@ -97,7 +97,7 @@ EXPOSE 8000
 # app.main:app: FastAPI 앱 위치
 # --host 0.0.0.0: 모든 네트워크 인터페이스에서 접속 허용
 # --port 8000: 8000번 포트에서 실행
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-proxy-headers"]
 
 # ============================================
 # Stage 3: Development - 개발 환경 단계
@@ -127,4 +127,4 @@ RUN curl -fsSL https://claude.ai/install.sh | bash \
 USER appuser
 
 # 개발 모드 명령어 (--reload: 코드 변경 시 자동 재시작)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--no-proxy-headers"]

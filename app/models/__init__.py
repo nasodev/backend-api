@@ -8,6 +8,7 @@ from app.models.calendar import (
 )
 from app.models.ccusage import CcusageDailyRecord
 from app.models.blog import BlogPost
+from app.models.blog_comments import BlogComment, BlogCommentPasswordAttempt
 
 __all__ = [
     "FamilyMember",
@@ -18,4 +19,6 @@ __all__ = [
     "PendingEventStatus",
     "CcusageDailyRecord",
     "BlogPost",
+    "BlogComment",
+    "BlogCommentPasswordAttempt",
 ]

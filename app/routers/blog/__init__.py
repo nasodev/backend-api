@@ -4,13 +4,14 @@ from fastapi import APIRouter, Depends
 
 from app.dependencies import get_blog_admin
 from app.dependencies.entities import FirebaseUser
-from app.routers.blog import images, posts
+from app.routers.blog import comments, images, posts
 from app.schemas import BlogPostSummary, BlogPostDetail
 from app.services.blog import BlogServiceProtocol, get_blog_service
 
 router = APIRouter(prefix="/blog")
 router.include_router(posts.router)
 router.include_router(images.router)
+router.include_router(comments.router)
 
 
 @router.get("/admin/posts", response_model=list[BlogPostSummary], tags=["blog"])

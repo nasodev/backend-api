@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
+from ipaddress import ip_network
 from functools import lru_cache
 
 
@@ -40,6 +42,13 @@ class Settings(BaseSettings):
     # Blog
     blog_admin_uids: list[str] = []
     blog_image_dir: str = "data/blog-images"
+    blog_comment_hash_secret: str = Field(default="", repr=False)
+    blog_comment_trusted_proxy_networks: list[str] = ["127.0.0.0/8", "::1/128"]
+
+    @field_validator('blog_comment_trusted_proxy_networks')
+    @classmethod
+    def valid_comment_proxy_networks(cls, values):
+        return [str(ip_network(value)) for value in values]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
