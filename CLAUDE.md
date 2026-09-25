@@ -194,6 +194,13 @@ pytest -m e2e
 
 ## API Endpoints
 
+### Blog view counts
+
+- `view_count` is the stored count for that language. Increment only the visited published slug.
+- `total_view_count` is the sum for the published `{slug}` and `en-{slug}` pair, included in list, detail and `POST /blog/posts/{slug}/view` responses. Missing or unpublished counterparts contribute zero.
+- The total is a SQLAlchemy `column_property` SELECT expression; it adds no database column and requires no migration. It is independent of list pagination and tag filters.
+- Existing clients and admin statistics can continue reading `view_count`. Public blog clients should display `total_view_count` without fetching other posts.
+
 ### Health
 - `GET /health` - 서버 상태 확인
 

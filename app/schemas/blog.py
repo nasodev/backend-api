@@ -78,6 +78,7 @@ class BlogPostSummary(BaseModel):
     tags: list[str]
     reading_time_minutes: int
     view_count: int
+    total_view_count: int
     published_at: datetime
     updated_at: datetime
 
@@ -90,6 +91,7 @@ class BlogPostDetail(BlogPostSummary):
 
 class ViewCountResponse(BaseModel):
     view_count: int
+    total_view_count: int
 
 
 class ImageUploadResponse(BaseModel):

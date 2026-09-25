@@ -7,7 +7,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.models.blog import BlogPost
-from app.schemas.blog import BlogPostCreate, BlogPostUpdate
+from app.schemas.blog import BlogPostCreate, BlogPostUpdate, ViewCountResponse
 from app.services.blog.content import process_content
 
 
@@ -93,7 +93,7 @@ class BlogService:
         self.db.delete(post)
         self.db.commit()
 
-    def increment_view(self, slug: str) -> int:
+    def increment_view(self, slug: str) -> ViewCountResponse:
         result = self.db.execute(
             update(BlogPost)
             .where(BlogPost.slug == slug, BlogPost.is_published.is_(True))
@@ -103,5 +103,6 @@ class BlogService:
         row = result.first()
         if row is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Post not found")
+        total = self.db.query(BlogPost.total_view_count).filter(BlogPost.slug == slug).scalar()
         self.db.commit()
-        return row[0]
+        return ViewCountResponse(view_count=row[0], total_view_count=total)

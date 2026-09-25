@@ -41,8 +41,8 @@ def increment_view(
     slug: str,
     service: BlogServiceProtocol = Depends(get_blog_service),
 ):
-    """조회수 +1"""
-    return ViewCountResponse(view_count=service.increment_view(slug))
+    """방문한 언어의 조회수 +1 및 발행된 한글·영문 합계 반환"""
+    return service.increment_view(slug)
 
 
 @router.post("", response_model=BlogPostDetail, status_code=status.HTTP_201_CREATED)

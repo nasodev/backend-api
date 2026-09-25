@@ -6,8 +6,18 @@ from types import SimpleNamespace
 
 from fastapi import HTTPException
 
-from app.schemas.blog import BlogPostCreate, BlogPostUpdate
+from app.schemas.blog import BlogPostCreate, BlogPostUpdate, ViewCountResponse
 from app.services.blog.content import process_content
+
+
+class FakeBlogPost(SimpleNamespace):
+    @property
+    def total_view_count(self):
+        source = self.slug.removeprefix("en-")
+        return sum(
+            post.view_count for post in self._posts.values()
+            if post.is_published and post.slug in {source, f"en-{source}"}
+        )
 
 
 class FakeBlogService:
@@ -18,7 +28,8 @@ class FakeBlogService:
                  content_html="<p>본문</p>", description="설명"):
         """테스트 헬퍼 — process_content를 거쳐 실제 서비스와 동일한 toc 생성"""
         processed = process_content(content_html)
-        post = SimpleNamespace(
+        post = FakeBlogPost(
+            _posts=self.posts,
             id=uuid.uuid4(),
             slug=slug,
             title=title,
@@ -94,4 +105,4 @@ class FakeBlogService:
         if not post.is_published:
             raise HTTPException(404, detail="Post not found")
         post.view_count += 1
-        return post.view_count
+        return ViewCountResponse(view_count=post.view_count, total_view_count=post.total_view_count)

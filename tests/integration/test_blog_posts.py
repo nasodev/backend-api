@@ -45,8 +45,21 @@ class TestPublicPosts:
         fake_blog_service.add_post("viewed")
         r1 = client_with_fake_blog_service.post("/blog/posts/viewed/view")
         r2 = client_with_fake_blog_service.post("/blog/posts/viewed/view")
-        assert r1.json() == {"view_count": 1}
-        assert r2.json() == {"view_count": 2}
+        assert r1.json() == {"view_count": 1, "total_view_count": 1}
+        assert r2.json() == {"view_count": 2, "total_view_count": 2}
+
+    def test_translations_expose_raw_and_total_counts(self, client_with_fake_blog_service, fake_blog_service):
+        fake_blog_service.add_post("guide").view_count = 100
+        fake_blog_service.add_post("en-guide").view_count = 20
+        for slug, raw in [("guide", 100), ("en-guide", 20)]:
+            body = client_with_fake_blog_service.get(f"/blog/posts/{slug}").json()
+            assert body["view_count"] == raw
+            assert body["total_view_count"] == 120
+        listing = client_with_fake_blog_service.get("/blog/posts").json()
+        assert [post["total_view_count"] for post in listing] == [120, 120]
+        response = client_with_fake_blog_service.post("/blog/posts/en-guide/view")
+        assert response.json() == {"view_count": 21, "total_view_count": 121}
+        assert fake_blog_service.posts["guide"].view_count == 100
 
     def test_view_missing_404(self, client_with_fake_blog_service):
         response = client_with_fake_blog_service.post("/blog/posts/nope/view")

@@ -4,9 +4,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import String, Boolean, Text, Integer, DateTime, Index
+from sqlalchemy import String, Boolean, Text, Integer, DateTime, Index, case, func, select
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, column_property, mapped_column
 
 from app.external.database import Base
 
@@ -40,3 +40,21 @@ class BlogPost(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
+
+
+# A read-only SELECT expression, not a stored column. Keep the existing per-language
+# counters and compute the total independently of the outer query's page/tag filter.
+_view_posts = BlogPost.__table__.alias("view_posts")
+_counterpart_slug = case(
+    (BlogPost.slug.like("en-%"), func.substr(BlogPost.slug, 4)),
+    else_="en-" + BlogPost.slug,
+)
+BlogPost.total_view_count = column_property(
+    select(func.coalesce(func.sum(_view_posts.c.view_count), 0))
+    .where(
+        _view_posts.c.is_published.is_(True),
+        _view_posts.c.slug.in_([BlogPost.__table__.c.slug, _counterpart_slug]),
+    )
+    .correlate_except(_view_posts)
+    .scalar_subquery()
+)
